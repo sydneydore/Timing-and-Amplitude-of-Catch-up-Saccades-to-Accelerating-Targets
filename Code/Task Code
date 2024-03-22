@@ -1,0 +1,265 @@
+%% psych toolbox screen set up
+sca;
+close all;
+clearvars;
+cd('C:\Users\BlohmLab\Desktop\Sydney\Code')
+
+savePath ='C:\Users\BlohmLab\Desktop\Sydney\Data';
+prompt = {'Tracker EDF file name:', 'Subject ID:', 'Session #', 'Block #', '# of trials'};
+dlgTitle = 'input';                              
+numLines = 1;                                     
+defaultAns = {'AC_SB','13','5','9','50'};
+inputCluster = inputdlg(prompt, dlgTitle, numLines, defaultAns);
+edfFile = strcat(inputCluster{1}, inputCluster{3}, inputCluster{4});
+subjectID = str2num(inputCluster{2});
+blockNumber = str2num(inputCluster{4}); 
+numTrials = str2num(inputCluster{5});
+sessionNumber = str2num(inputCluster{3});
+time = clock;
+filename = sprintf( '%s_%d_%02d_%02d_%02dh%02dm.mat', edfFile, time(1), time(2), time(3), time(4), time(5));
+rand('seed', sum(100*clock));
+PsychDefaultSetup(2);
+oldLevel = Screen('Preference', 'VisualDebugLevel', 1);
+oldEnableFlag = Screen('Preference', 'SuppressAllWarnings', 1);
+screens = Screen('Screens');
+screenNumber = max(screens);
+white = WhiteIndex(screenNumber);
+black = BlackIndex(screenNumber);
+[window, windowRect] = PsychImaging('OpenWindow', screenNumber, black);
+[xPixels, yPixels] = Screen('WindowSize', window);
+[xCenter, yCenter] = RectCenter(windowRect);
+Screen('BlendFunction', window, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+ifi = Screen('GetFlipInterval', window);
+screenCenter = [xPixels / 2 yPixels / 2]; 
+frameRate = round(1/ifi);
+
+
+dist2Screen = 47;%cm
+screenWidth = 52; %cm 
+screenHeight = 29.5; %cm
+%% Conversions calculations
+
+windowXdegrees = atan2(screenWidth/2, dist2Screen)*2*180/pi; %calculate degrees of viewing angle
+ppdx = xPixels/windowXdegrees; %calculate pixels per degrees on the X axis
+ppcmx = xPixels/screenWidth;
+windowYdegrees = atan2(screenHeight/2, dist2Screen)*2*180/pi; %degrees
+ppdy = yPixels/windowYdegrees;
+ppcmy = yPixels/screenHeight;
+%% target visual parameters
+dotColor = [0 0 0];
+dotYpos = 0.5 * yPixels; %divide these values /4 for now just to fit in Q1
+dotSizePix = 10;
+start_vel = 0 ;
+
+%% Experiment setup
+exp_array = cell(1,numTrials);
+
+%% dot motion set up 
+exp_array = cell(4,numTrials);
+params = nan(5,numTrials);
+frame_infos = nan(7,numTrials);
+vels = cell(1,numTrials);
+for aTrial = 1:numTrials
+    %% put all this code in a seperate matlab function. 
+    
+    [motion, param, frame_info, vel_values] = generate_trial(frameRate, ppcmx, dist2Screen);
+    %% before assigning to exp_array, check to see if the trial goes off screen, if it does, recall generate trial function. 
+    while isempty(exp_array{1,aTrial})
+        if sum(xCenter + motion(3,:) > xPixels | xCenter + motion(3,:) < 0) == 0
+            exp_array{1,aTrial} = motion(1,:); %motion matrix in degrees
+            exp_array{2,aTrial} = motion(2,:); %motion matrix in cm
+            exp_array{3,aTrial} = motion(3,:); %motion matrix in pixels 
+            params(:,aTrial) = param;
+            frame_infos(:,aTrial) = frame_info';
+            vels{1,aTrial} = vel_values;
+        else
+            [motion, param, frame_info, vel_values] = generate_trial(frameRate, ppcmx, dist2Screen);
+        end
+    end
+end
+
+    %% Eyelink %%%%%%%%%%
+    
+    %% Eyelink initialization and configuration
+
+    if Eyelink('initialize','PsychEyelinkDispatchCallback'),
+
+        fprintf('Eyelink failed init');
+        Screen('CloseAll');
+        return
+     end
+    
+              
+	
+    HideCursor;
+    el = EyelinkInitDefaults(window);
+     %tell the Eyelink Host the coordinate space
+    if Eyelink('IsConnected') ~= el.notconnected,
+        Eyelink('Command', 'screen_pixel_coords = %d %d %d %d', 0, 0, windowRect(RectRight), windowRect(RectBottom));
+    end
+    Eyelink('Command','calibration_type = HV9');
+    Eyelink('Command','read_ioport %d',hex2dec('379'));
+    Eyelink('Command','write_ioport %d %d',hex2dec('37A'), 0);
+    Eyelink('Command','write_ioport %d %d',hex2dec('378'), 0);
+    Eyelink('Command','file_event_filter = LEFT,RIGHT, FIXATION, BLINK, MESSAGE, BUTTON, SACCADE, INPUT');%sets which events will be written to the EDF file.
+    Eyelink('Command','link_event_filter = LEFT,RIGHT, FIXATION, BLINK, MESSAGE, BUTTON, SACCADE, INPUT');%sets which types of events will be sent through link
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    % configure eyelink to send raw data
+    status=Eyelink('command','link_sample_data = LEFT,RIGHT,GAZE,AREA,GAZERES,HREF,PUPIL,STATUS,INPUT,BUTTON,HMARKER');
+    if status~=0
+       disp('link_sample_data error')
+    end
+        status=Eyelink('command','inputword_is_window = ON');
+    if status~=0
+        disp('inputword_is_window error')
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if isempty(edfFile)
+        edfFile = 'data';
+    end
+    Eyelink('openfile', edfFile);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %% Eyelink %%%%%%%%%%
+    %%calibrate the eye tracker
+    
+    el.backgroundcolour = 204;
+    el.foregroundcolour = 0;
+    el.window = window;
+    status = Eyelink('isconnected');
+    if status == 0 %if not connected
+        Eyelink('closefile');
+        Eyelink('shutdown');
+        
+        Screen('CloseAll');
+        ShowCursor;
+        % restore Screen preferce settings.
+        Screen('Preference', 'VisualDebugLevel', oldLevel);
+        Screen('Preference', 'SuppressAllWarnings', oldEnableFlag);
+        return;
+    end
+    
+    el.callback = '';
+    error = EyelinkDoTrackerSetup(el, el.ENTER_KEY); % This calls the calibration,error: Screen( 'FillRect',  el.window, el.backgroundcolour );	% clear_cal_display()
+    
+    
+    if error ~= 0, fprintf('eye tracker setup error = %d\n',error);end
+    %%%end calibration%%%%%
+    
+    
+    %Set Background color
+    Eyelink('command','draw_filled_box %d %d %d %d %d',windowRect(RectLeft),windowRect(RectTop),windowRect(RectRight),windowRect(RectBottom),0);
+    
+    Screen('FillRect',window,204,windowRect);
+    Screen('Flip',window);
+    Eyelink('StartRecording');
+    %%%%%%%%%%%%%%%%
+    eye_used = Eyelink('EyeAvailable');
+    
+    switch eye_used
+        case el.BINOCULAR
+            error('tracker indicates binocular');
+        case el.LEFT_EYE
+            error('tracker indicates left eye');
+        case el.RIGHT_EYE
+            disp('tracker indicates right eye')
+        case -1
+            error('eyeavailable returned -1');
+        otherwise
+            error('unexpected result from eyeavailable');
+    end
+    eyeIndex = el.RIGHT_EYE & eye_used;
+%%
+%experimental loop
+Eyelink('command','draw_text %d %d %d %d',windowRect(RectRight)-100, windowRect(RectBottom)-100, 10, aTrial);
+for aTrial = 1:numTrials
+    aTrial
+    trial_start = GetSecs;
+    motion = exp_array{3,aTrial};
+    Eyelink('Command','write_ioport %d %d',hex2dec('378'), 3);
+    for frame = 1:length(motion)
+        Screen('DrawDots', window, [motion(frame)+xCenter, dotYpos], dotSizePix, dotColor, [], 2);
+        Screen('Flip', window);
+        exp_array{4,aTrial}(frame) = GetSecs - trial_start;
+        if frame == frame_infos(1,aTrial)
+            Eyelink('message','fixation');
+        elseif frame == frame_infos(3,aTrial)
+            Eyelink('message','vel');
+        elseif frame == frame_infos(4,aTrial)
+            Eyelink('message', 'step2');
+        elseif frame == frame_infos(5,aTrial)
+            Eyelink('message', 'acc_off');
+        elseif frame == frame_infos(6,aTrial)
+            Eyelink('message', 'fixation2');
+        end
+    end
+    Eyelink('message','trialEnd');
+    Eyelink('command','draw_text %d %d %d %d',windowRect(RectRight)-100, windowRect(RectBottom)-100, 0, aTrial);
+    Eyelink('Command','write_ioport %d %d',hex2dec('378'), 0);
+end
+
+	Eyelink('StopRecording');
+	Eyelink('command', 'set_idle_mode');
+	WaitSecs(0.5);
+	Eyelink('CloseFile');
+        
+
+        % "Thank you"-Screen
+        
+        %% change thank you screen
+
+    Screen('FillRect',window,204,windowRect);
+    Screen('Flip',window);
+    
+    
+    Screen('TextStyle',window,1);% 0=plain, 1=bold, 2=italics, 3=1&2,  4=underlined, 5=4&1,6=4&2, 7=4&3. rem(?,8)
+    [oldFontName,oldFontNumber]=Screen(window,'TextFont','Tahoma');
+    Screen('TextSize',window,58);
+    ttext='Thank you for your participation!';
+                
+    tsize=Screen('TextBounds', window, ttext);twidth=tsize(3);
+    Screen('DrawText',window,ttext,xCenter-(twidth/2),yCenter-60,black);
+    ttext='Please rest now.';
+    
+    tsize=Screen('TextBounds', window, ttext);twidth=tsize(3);
+    Screen('DrawText',window,ttext,xCenter-(twidth/2),yCenter+60, black);
+    Screen('TextSize',window,40);
+    Screen('flip',window);
+                             
+    pause(2);
+    
+        % restore Screen preferce settings.
+    Screen('CloseAll')
+    ShowCursor;
+    Screen('Preference', 'VisualDebugLevel', oldLevel);
+    Screen('Preference', 'SuppressAllWarnings', oldEnableFlag);
+    
+    %% Change save file to save all the needed variables in your experiment
+    
+     save([savePath '/' filename], 'numTrials', 'edfFile', 'subjectID', 'blockNumber','sessionNumber','params', 'dist2Screen', 'screenWidth', 'screenHeight', 'xPixels', 'yPixels', 'ppdy'...
+    ,'xCenter', 'frameRate','ppdx','ppcmx','ppcmy', 'yCenter', 'dotColor', 'dotSizePix', 'ifi',... %name and specs
+                                'frame_infos','vels',... %parameters
+                                'exp_array'); %target location and time for each trial 
+    
+      % download eyelink data file
+try
+    fprintf('Receiving data file ''%s''\n',edfFile);
+    %  status = Eyelink('ReceiveFile');
+    status=Eyelink('ReceiveFile', edfFile ,savePath,1);
+    if status > 0
+        fprintf('ReceiveFile status %d\n ', status);
+    end
+    if 2 == exist(edfFile, 'file')
+        fprintf('Data file ''%s'' can be found in '' %s\n',edfFile, pwd);
+    end
+catch Me
+    fprintf('Problem receiving data file ''%s''\n',edfFile);
+    Eyelink('ShutDown');
+end
+Eyelink('ShutDown');     
+  
+
+sca;   
