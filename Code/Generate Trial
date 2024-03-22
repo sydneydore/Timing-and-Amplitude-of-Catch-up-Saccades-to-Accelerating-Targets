@@ -1,0 +1,103 @@
+function [motion, param, frame_info, vel_values] = generate_trial(frameRate,ppcmx, dist2Screen)
+     
+    dotXpos = [];
+    n1 = rand;
+    n2 = rand;
+    if n1>0.5
+        trial_type = 1;
+    else
+        trial_type =2;
+    end
+    if n2 > 0.5
+        initial_condition = 20;
+    else 
+        initial_condition = -20;
+    end
+    
+    %desginate initial conditions
+    switch trial_type
+        case 1
+            switch initial_condition
+                case 20
+                    a = -randi([0,80]);
+                    vel = 0;
+                case -20
+                    a = randi([0,80]);
+                    vel = 0;
+            end
+        case 2
+            switch initial_condition
+                case 20
+                    a = randi([0,80]);
+                    vel = -40;
+                    step_1 = 6;
+                case -20
+                    a = -randi([0,80]);
+                    vel = 40;
+                    step_1 = -6;
+            end
+    end
+    
+    step_2 = randi([-6,6]);    
+  
+
+    
+    %designate duration of each trial segment
+    dur_fix = randi([750,1250]); %ms
+    dur_acc = 1000;
+    time_step_2 = randi([350,500]);
+    dur_fix_2 = 500;
+
+    
+    %calculate num of frames before assigning positions
+    frames_fixation = round(dur_fix * frameRate/1000);
+    frames_step_1 = 1;
+    frames_step_2 = round(time_step_2 * frameRate/1000);
+    frames_fixation_2 = round(dur_fix_2 * frameRate/1000);
+    frames_acc = round(dur_acc * frameRate/1000);
+    
+    event_1 = 1;
+    event_2 = frames_fixation;
+    if trial_type == 1
+        event_3 = event_2 + 1; %start of vel
+    elseif trial_type ==2
+        event_3 = event_2 + 2;
+    end
+    event_4 = event_3 + frames_step_2; %frame of step 2
+    event_5 = event_3 + frames_acc -1 ;%frames of end of motion
+    event_6 = event_5 + 1; %start of fixation 2
+
+    numFrames = event_6 + frames_fixation_2;
+    frame_info = [event_1, event_2, event_3, event_4, event_5, event_6, numFrames];
+    
+    if a == 0
+        vel_values(1:frames_acc) = vel;
+    else
+    vel_values(1:frames_acc) = [vel+a/frameRate:a/frameRate:vel + a*frames_acc/frameRate];
+    end
+    dotXpos(event_1:event_2) = initial_condition;
+    
+    if trial_type == 2
+        dotXpos(event_2+1) = initial_condition + step_1;
+    end
+    %acceleration loop
+    for i=event_3:event_5
+        if i==event_4 
+            dotXpos(i) = dotXpos(i-1) + vel_values(i-event_3+1)/frameRate + step_2;
+        
+        else
+            dotXpos(i) = dotXpos(i-1) + vel_values(i-event_3+1)/frameRate;
+        end
+    end
+    
+    dotXpos(event_6:numFrames) = dotXpos(event_5);
+
+     
+    motionDeg = dotXpos;
+    motionCm = tan(dotXpos.*pi/180)*dist2Screen; %motion matrix in cm
+    motionPx = motionCm .* ppcmx; %motion matrix in pixels 
+    motion = [motionDeg;motionCm;motionPx];
+    param = [trial_type, initial_condition, vel, a, step_2];
+    
+end
+    
