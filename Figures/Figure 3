@@ -1,0 +1,160 @@
+#Figure 3
+
+#Panel A
+
+#multiple linear regression with sacc ampas dv and norm PE, VE and AE as IVs
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import numpy as np
+
+path_to_data = '/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv'
+
+df = pd.read_csv(path_to_data)
+df = pd.read_csv('/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv')
+
+df = df.dropna()
+
+#df for each subject
+
+subject1 = df.loc[(df['SubjectID'] ==1),:]
+subject2 = df.loc[(df['SubjectID'] ==2),:]
+subject3 = df.loc[(df['SubjectID'] ==3),:]
+subject4 = df.loc[(df['SubjectID'] ==4),:]
+subject6 = df.loc[(df['SubjectID'] ==6),:]
+subject7 = df.loc[(df['SubjectID'] ==7),:]
+subject9 = df.loc[(df['SubjectID'] ==9),:]
+subject10 = df.loc[(df['SubjectID'] ==10),:]
+subject11 = df.loc[(df['SubjectID'] ==11),:]
+subject12 = df.loc[(df['SubjectID'] ==12),:]
+subject13 = df.loc[(df['SubjectID'] ==13),:]
+subject14 = df.loc[(df['SubjectID'] ==14),:]
+subject15 = df.loc[(df['SubjectID'] ==15),:]
+
+
+
+# #enter subject to display for figures
+subject = subject4
+
+
+X = subject[['RA200','RS100','PE100msBefore']]
+y = subject['camp2']
+
+X = sm.add_constant(X)
+model = sm.OLS(y, X)
+results = model.fit()
+
+
+ampPERSRA = results.params[0] + (results.params[3]*subject['PE100msBefore']) + (results.params[2]*subject['RS100']) + (results.params[1]*subject['RA200'])
+
+
+
+# #building up the regression  model 
+X1 = subject['PE100msBefore']
+y1 = subject['camp2']
+X1 = sm.add_constant(X1)
+est1 = sm.OLS(y1, X1)
+results1 = est1.fit()
+
+ampPE = results1.params[0] + results1.params[1]*(subject['PE100msBefore'])
+
+
+X2 = subject[['PE100msBefore', 'RS100']]
+X2 = sm.add_constant(X2)
+est2 = sm.OLS(y1, X2)
+results2 = est2.fit()
+
+
+ampPERS = results2.params[0]  + (results2.params[1]*subject['PE100msBefore']) + (results2.params[2]*subject['RS100'])
+
+
+#Panel A
+fig = plt.figure(figsize=(5, 5))
+ax = fig.add_subplot(111)
+ax.scatter(ampPE,y1, s=10, c = 'g', label = 'PE')
+ax.scatter(ampPERS,y1, s=10, c = 'b', label = 'PE + VE')
+ax.scatter(ampPERSRA, y1, s = 10, c = 'orange', label = 'PE + VE + AE')
+plt.title('Predicted Saccade Amplitude with PE, VE and AE vs. Observed')
+plt.xlabel('Predicted')
+plt.ylabel('Observed')
+plt.legend()
+ax.set_ylim(0,15)
+ax.set_xlim(0,15)
+
+plt.show()
+#%%
+#plotting residuals with KDE
+
+resid1 = (ampPE + -(y1))/np.sqrt(2)
+resid2 = (ampPERS + -(y1))/np.sqrt(2)
+resid3 = (ampPERSRA + -(y1))/np.sqrt(2)
+
+#inset for std of each 
+std1 = np.std(resid1)
+std2 = np.std(resid2)
+std3 = np.std(resid3)
+
+print('SD PE:', std1)
+print('SD PE + RS:', std2)
+print('SD PE + RS + RA:', std3)
+
+
+#%% Panel B
+#residuals fig with KDE
+
+kde1 = sm.nonparametric.KDEUnivariate(resid1)
+kde1.fit() 
+kde2 = sm.nonparametric.KDEUnivariate(resid2)
+kde2.fit() 
+kde3 = sm.nonparametric.KDEUnivariate(resid3)
+kde3.fit() 
+
+fig = plt.figure(figsize=(5, 5))
+ax = fig.add_subplot(111)
+
+ax.hist(
+    resid1,
+    bins=50,
+    density=True,
+    label="Histogram from samples",
+    zorder=5,
+    color="g",
+    alpha=0.5,
+    fill = False,
+    histtype='step'
+)
+ax.hist(
+    resid2,
+    bins=50,
+    density=True,
+    label="Histogram from samples",
+    zorder=5,
+    color="b",
+    alpha=0.5,
+    fill = False ,
+    histtype='step'
+)
+
+ax.hist(
+    resid3,
+    bins=50,
+    density=True,
+    label="Histogram from samples",
+    zorder=5,
+    color="orange",
+    alpha=0.5,
+    fill = False, 
+    histtype='step'
+)
+
+ax.plot(kde1.support, kde1.density, lw=1, label="KDE from samples", zorder=10, c = 'g')
+ax.plot(kde2.support, kde2.density, lw=1, label="KDE from samples", zorder=10, c = 'b')
+ax.plot(kde3.support, kde3.density, lw=1, label="KDE from samples", zorder=10, c = 'orange')
+labels = ('PE', 'PE + RS', 'PE + RS + RA')
+ax.legend(labels)
+ax.set_xlim(-5,5)
+ax.set_xlabel('Residuals')
+ax.set_ylabel('Frequency')
+
+plt.title('Residuals')
