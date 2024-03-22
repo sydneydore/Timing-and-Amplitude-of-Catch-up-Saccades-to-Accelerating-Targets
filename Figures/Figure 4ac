@@ -1,0 +1,127 @@
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import scikits.bootstrap as boot
+import matplotlib.pyplot as plt
+
+
+
+path_to_data = '/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv'
+
+df = pd.read_csv(path_to_data)
+df = pd.read_csv('/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv')
+
+
+
+
+df['PEpred100step'] = df.PEtStep+((0.15)*df.RSstep)
+
+#create bins for  variables
+q_label = ['Negative','Positive'] 
+df['PEbin'] = pd.qcut(df['PEtStep'], 2, labels= q_label)
+df['RSbin'] = pd.qcut(df['RSstep'], 2, labels= q_label)
+df['RAbin'] = pd.cut(df['RAstep'], bins = [(np.min(df['RAstep'])), 0,(np.max(df['RAstep']))], labels= q_label)
+
+df['PEpredbin'] = pd.cut(df['PEpred100step'], bins = [(np.min(df['PEpred100step'])), -5, 0, 5, (np.max(df['PEpred100step']))], labels= ['<-5\u00b0', '-5\u00b0 - 0\u00b0', '0\u00b0 - 5\u00b0', '>5\u00b0'])
+
+
+
+PosPE = df.loc[(df['RAbin'] =='Positive'),:]
+lNeg1 = PosPE.loc[(PosPE['PEpredbin'] =='<-5\u00b0'),:] #large negative
+sNeg1 = PosPE.loc[(PosPE['PEpredbin'] =='-5\u00b0 - 0\u00b0'),:]  #small negative
+lPos1 = PosPE.loc[(PosPE['PEpredbin'] =='>5\u00b0'),:] #large positive     
+sPos1 = PosPE.loc[(PosPE['PEpredbin'] =='0\u00b0 - 5\u00b0'),:] #small positive
+
+NegPE = df.loc[(df['RAbin'] =='Negative'),:]
+lNeg2 = NegPE.loc[(NegPE['PEpredbin'] =='<-5\u00b0'),:]#large neg
+sNeg2 = NegPE.loc[(NegPE['PEpredbin'] =='-5\u00b0 - 0\u00b0'),:]  #small neg
+lPos2 = NegPE.loc[(NegPE['PEpredbin'] =='>5\u00b0'),:]  #large pos          
+sPos2 = NegPE.loc[(NegPE['PEpredbin'] =='0\u00b0 - 5\u00b0'),:] #small pos
+
+
+
+#bootstrapped CIs
+lNegPosRACI = boot.ci(lNeg1['ReactionTime'], np.mean)
+sNegPosRACI = boot.ci(sNeg1['ReactionTime'], np.mean)
+lPosPosRACI = boot.ci(lPos1['ReactionTime'], np.mean)
+sPosPosRACI = boot.ci(sPos1['ReactionTime'], np.mean)
+
+lNegNegRACI = boot.ci(lNeg2['ReactionTime'], np.mean)
+sNegNegRACI = boot.ci(sNeg2['ReactionTime'], np.mean)
+lPosNegRACI = boot.ci(lPos2['ReactionTime'], np.mean)
+sPosNegRACI = boot.ci(sPos2['ReactionTime'], np.mean)
+
+
+#subject medians
+grouped1pos = lNeg1.groupby('SubjectID')['ReactionTime'].median()
+grouped2pos = sNeg1.groupby('SubjectID')['ReactionTime'].median()
+grouped3pos = lPos1.groupby('SubjectID')['ReactionTime'].median()
+grouped4pos = sPos1.groupby('SubjectID')['ReactionTime'].median()
+grouped1neg = lNeg2.groupby('SubjectID')['ReactionTime'].median()
+grouped2neg = sNeg2.groupby('SubjectID')['ReactionTime'].median()
+grouped3neg = lPos2.groupby('SubjectID')['ReactionTime'].median()
+grouped4neg = sPos2.groupby('SubjectID')['ReactionTime'].median()
+
+#diff between medians 
+difflneg = grouped1pos - grouped1neg
+diffsneg = grouped2pos - grouped2neg
+difflpos = grouped3pos - grouped3neg
+diffspos = grouped4pos - grouped4neg
+
+diffs = np.vstack((difflneg, diffsneg, difflpos, diffspos))
+diffs = np.transpose(diffs)
+
+
+lneg_mean = []
+for _ in range(1000):  #so B=1000
+    sample_n = np.random.choice(difflneg, size=13)
+    lneg_mean.append(sample_n.mean())
+    
+sneg_mean = []
+for _ in range(1000):  #so B=1000
+    sample_n = np.random.choice(diffsneg, size=13)
+    sneg_mean.append(sample_n.mean())
+
+lpos_mean = []
+for _ in range(1000):  #so B=1000
+    sample_n = np.random.choice(difflpos, size=13)
+    lpos_mean.append(sample_n.mean())
+ 
+spos_mean = []
+for _ in range(1000):  #so B=1000
+    sample_n = np.random.choice(diffspos, size=13)
+    spos_mean.append(sample_n.mean())    
+
+meandiffs = np.vstack((lneg_mean, sneg_mean,spos_mean, lpos_mean))
+meandiffs = np.transpose(meandiffs)
+
+mean_diffs = pd.DataFrame(data = meandiffs,columns = ['<-5\u00b0', '-5\u00b0 - 0\u00b0','0\u00b0 - 5\u00b0', '>5\u00b0'])
+
+#%%
+#Panel A
+#violin plot of saccade latencies by size of pepred and sign of RA
+
+ax2 = sns.violinplot(x="PEpredbin", y="ReactionTime", hue="RAbin",hue_order= ['Positive', 'Negative'],
+                    data=df, palette= {'Positive':'w', 'Negative':'grey'}, split=True,
+                    scale="count", inner = 'quartile')
+ax2.set(ylabel = 'Saccade Latency', xlabel = 'Size of Predicted Position Error', title = 'Saccade Latencies by Size of PEpred and Sign of RA')
+
+labels = ['<-5\u00b0 ', '-5\u00b0 - 0\u00b0', '0\u00b0 - 5\u00b0', '>5\u00b0']
+plt.savefig('latencypepredposter1.svg', format="svg")
+
+plt.show()
+#%%
+#panel c
+#bootstrapped median latency differences per bin of pepred
+
+ax = sns.violinplot(data=mean_diffs, palette="Set1",
+                      scale="count", inner = 'quartiles')
+plt.axhline(y=0,ls = '--' , c = 'k')
+plt.axvline(x = 1.5, ls = '--' , c = 'k')
+plt.ylim(-25,25)
+plt.xlabel('Sizes of Predicted Position Error')
+plt.ylabel("Latency Difference")
+plt.title("Latency Difference Between Positive and Negative RA")
+plt.savefig('latencydiffsposter1.svg', format="svg")
+plt.show()
