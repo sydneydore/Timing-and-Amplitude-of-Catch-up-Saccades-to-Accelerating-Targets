@@ -1,0 +1,57 @@
+% Saccade Experiment Analysis interface 
+
+clear 
+warning off
+RectRight = 3;
+origPath = '/Users/Sydney/Desktop/Saccade/Code';
+loadPath = '/Users/Sydney/Desktop/Saccade/Data_new';
+cd(origPath)
+%% create figure
+f = figure('Name','AC Analysis Interface','Units','normalized','Position',[.01 .01 .98 .94],'toolbar','none','NumberTitle','off');
+
+% create axes
+ylab = {'Eye Gaze X/Y(degree)','Eye velo X/Y(degree/s)','Eye acce X/Y(degree/s^2)' };
+for i = 1:3
+    ax(i) = axes('Units','normalized','Position',[.05 1.02-i*.32 .6 .28]);
+    ylabel(ylab{i});
+end
+xlabel('Time (ms)')
+
+%%%%%%%%%%
+%ax(4) = axes('Units','normalized','Position',[.65 .70 .35 .28],'PlotBoxAspectRatio',[1.2 1 1]); 
+ax(4) = axes('Units','normalized','Position',[.70 .70 .25 .28]);
+ylabel('Eye Position Y (deg)')
+xlabel('Eye Position X (deg)')
+
+%%%%%%%%%%%%
+%% initialize basic variables
+trn = 1;
+horiB = [0;1];
+vertB = [0;1];
+
+%% add menu items
+gm(1) = uimenu('label','Catch Up Saccade AI');
+gm(2) = uimenu(gm(1),'label','Load block of data','callback','D=New_Load;trn=1;New_Replot');
+gm(3) = uimenu(gm(1),'label','Automatic SaccOnset marking','callback','D=ACSaccSet(D);New_Replot');
+gm(4) = uimenu(gm(1),'label','Save D-Matrix','callback','param = NewExtract(D);');
+
+cd(origPath)
+%% add buttons & controls
+h.goToTrial = uicontrol('Style','text','String','Go to trial #','Visible','off',...
+    'units','normalized','Position', [0.7 0.25 0.05 0.025]);
+h.edit = uicontrol('Style','edit','Visible','off',...
+    'units','normalized','Position', [0.75 0.25 0.025 0.025]);
+h.go = uicontrol('Style','pushbutton','String','Go','Visible','off',...
+    'units','normalized','Position', [0.775 0.25 0.025 0.025], 'Callback',...
+    'trn=str2num(get(h.edit,''String''));New_Replot');
+h.nextTrial = uicontrol('Style', 'pushbutton', 'String', 'Next trial','Visible','off',...
+    'units','normalized','Position', [0.75 0.3 0.05 0.025], 'Callback', 'trn=trn+1;New_Replot');
+h.previousTrial = uicontrol('Style', 'pushbutton', 'String', 'Previous trial','Visible','off',...
+    'units','normalized','Position', [0.7 0.3 0.05 0.025], 'Callback', 'trn=trn-1;New_Replot');
+h.trialGood = uicontrol('Style', 'pushbutton', 'String', 'Trial GOOD', 'foregroundcolor', 'g',...
+    'units','normalized','Position', [0.7 0.35 0.05 0.025],'Visible','off',...
+    'Callback','D{trn}.good=rem(D{trn}.good+1,2);ACGoodBadToggle');
+h.saccOn = uicontrol('Style', 'pushbutton', 'String', 'saccOnset', ...
+    'units','normalized','Position', [0.7 0.2 0.05 0.025],'Visible','off','Callback','[D{trn}.saccOn,y]=ginput(1);D{trn}.saccOn = round(D{trn}.saccOn)+1;New_Replot;');
+h.saccOff = uicontrol('Style', 'pushbutton', 'String', 'saccOffset', ...
+    'units','normalized','Position', [0.75 0.2 0.05 0.025],'Visible','off','Callback','[D{trn}.saccOff,y]=ginput(1);D{trn}.saccOff = round(D{trn}.saccOff)+1;New_Replot;');
