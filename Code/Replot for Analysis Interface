@@ -1,0 +1,184 @@
+    origPath = '/Users/Sydney/Desktop/Saccade/Code';
+    savePath = '/Users/Sydney/Desktop/Saccade/Data/Data_new';
+
+if isempty(D) %Error in case data can't be found
+    fprintf('Error in Data loading, D is empty.');
+    return
+end
+
+N = D{1}.numTrials; 
+if trn < 1, trn = 1; end
+if trn > N, trn = N; end
+ACGoodBadToggle;
+
+filestr = D{1}.dFilename(1:end-5);
+set(f,'name',['ACPAI: SP Analysis Interface: ' filestr ',trial #: ' num2str(trn)]);
+
+tVel = D{trn}.tVel - D{trn}.tFixation;
+tStep2 = D{trn}.tStep2 - D{trn}.tFixation;
+tAcc_off = D{trn}.tAcc_off - D{trn}.tFixation;
+tFixation2 = D{trn}.tFixation2 - D{trn}.tFixation;
+tTrialEnd = D{trn}.tTrialEnd - D{trn}.tFixation;
+
+
+%%detect saccade if it is not done before
+varName = sprintf('D{%i}',trn);	%formats data into string
+for n = 1:length(D)     
+    [D{n}.sacc, D{n}.eyeXvws, D{n}.eyeYvws, D{n}.eyeVvws] = detectSaccades2(D,n);
+end
+
+%%detect anticipatory smooth pursuit (ASP)
+%if isfield(D{trn},'ASPlot') == 0;
+   % D = findASP(D,trn);
+%end    
+%% plot eye trace target trace  
+axes(ax(4))
+cla
+hold on
+
+plot(D{trn}.eyeX(D{trn}.tVel:D{trn}.tFixation2), D{trn}.eyeY(D{trn}.tVel:D{trn}.tFixation2))
+plot(D{trn}.target_x(D{1}.frame_infos(2,trn):D{1}.frame_infos(6,trn))*D{1}.ppcmx, zeros(size(D{trn}.target_x(D{1}.frame_infos(2,trn):D{1}.frame_infos(6,trn)),1)))
+set(ax(4),'xlim',[-D{1}.xCenter D{1}.xCenter]/D{1}.ppdx,'ylim',[-D{1}.screenHeight/2 D{1}.screenHeight/2]); 
+%% %plot position
+axes(ax(1));
+cla; %Clear axes 
+hold on; %hold all previous axes
+plot(D{trn}.t, D{trn}.eyeX,'r'); %plot of eye position in X
+plot(D{trn}.tScreen, D{trn}.target_x','--k');%plot of target position in X
+plot([0 length(D{trn}.eyeX)], [0 0],'k');
+
+
+
+%plot saccade
+
+for iSacc =  1:size(D{trn}.sacc,1)
+    plot(D{trn}.t(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2)), (D{trn}.eyeX(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2))),'LineWidth',3);
+end
+
+legend('X-Position Eye', 'X-Position Target', 'X-Position without sacc');%, 'X without sacc');
+set(ax(1),'xlim',[0 length(D{trn}.eyeX)],'ylim',[-30 30]);
+%%
+%plot acceleration
+
+l = trn;
+        %try
+         indSacc = D{l}.sacc(D{l}.sacc(:,1)>D{l}.tStep2 + 100 & D{l}.sacc(:,1)<D{l}.tAcc_off,1);%find(D{k}.t(D{k}.sacc(:,1))>D{k}.tStep2);
+         if ~isempty(indSacc);
+         Arobust200 = [];
+         Arobust200 = robustfit(D{l}.t(indSacc(1) - 200:indSacc(1)),(D{trn}.eyeXvws(indSacc(1) - 200:indSacc(1))));
+         Arob200 = [];
+         Arob200 = Arobust200(2)*1000;
+        
+         ypred = Arobust200(1) + Arobust200(2)* (D{l}.t(indSacc(1) - 200:indSacc(1)));
+         endSacc = D{l}.sacc(D{l}.sacc(:,2)>indSacc(1),2);
+         otherSacc = D{l}.sacc(D{l}.sacc(:,1)<D{l}.tStep2);
+         closeSacc = [];
+          if otherSacc < indSacc(1) - 250
+        closeSacc = 0;
+            else
+        closeSacc = 1;
+          end
+        end
+%  end
+ 
+%plot velocity
+axes(ax(2));
+cla; %Clear axes 
+hold on; %hold all previous axes
+if ~isempty(indSacc)
+velrobust = robustfit(D{trn}.t(indSacc(1) - 125:indSacc(1)-75),(D{trn}.eyeX(indSacc(1) - 125:indSacc(1)-75)));
+velrob = velrobust(2)*1000;
+end
+
+plot(D{trn}.t, D{trn}.eyeXv,'r'); %plot of eye velocity in X
+plot(D{trn}.tScreen(D{1}.frame_infos(3,trn):D{1}.frame_infos(5,trn)) , D{1}.vels{trn},'g');%plot of target velocity in X
+target_velocity =  1000*[diff(D{trn}.target_x_interp)];
+target_velocity = [target_velocity, target_velocity(end)];
+plot(D{trn}.t, target_velocity, 'c')
+indSacc = D{trn}.sacc(D{trn}.sacc(:,1)>D{trn}.tStep2 + 100);
+         s = indSacc(1) - 125;
+         e = indSacc(1) - 75;
+         s2 = indSacc(1) - 200;
+         e2 = indSacc(1);
+if ~isempty(indSacc);
+    
+       m= D{l}.tStep2 -25;
+       o= D{l}.tStep2 +25;
+         tvelstep = D{l}.target_v_interp(m-D{l}.tVel:o-D{l}.tVel);
+         eyevstep = nanmean(D{l}.eyeXvws(m:o));
+         RSstep = tvelstep - eyevstep;
+         PEstep = D{l}.target_x_interp(D{l}.tStep2) -nanmean(D{l}.eyeX(m:o));
+         eyeastep = robustfit(D{l}.t(m:o),(D{l}.eyeXvws(m:o)));
+         eyeAstep = eyeastep(2)*1000;
+         RAstep = D{l}.a - eyeAstep;
+
+tvel = (target_velocity(s:e));
+Tvel = nanmean(target_velocity(s:e));
+tvel200 = target_velocity(s2:e2);
+end
+
+y2pred = velrobust(1) + velrobust(2)* (D{trn}.t(indSacc(1) - 125:indSacc(1) -75));
+plot([s e], velrob*[1 1], 'k')
+plot(D{trn}.t, D{trn}.eyeXvws,'r');
+
+
+plot(tStep2+10*[1 1],[-50 50], 'y')
+newRS = Tvel - velrob;
+plot([0 length(D{trn}.eyeXv)], [0 0],'k');
+plot(tStep2*[1 1],[-50 50],'b');
+plot(D{trn}.t(indSacc(1) - 200:indSacc(1)), ypred ,'b'); 
+
+
+%plot saccade
+for iSacc =  1:size(D{trn}.sacc,1)
+    plot(D{trn}.t(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2)), D{trn}.eyeXv(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2)),'LineWidth',3);
+   
+end
+
+
+legend('X-Velocity Eye', 'X-Velocity Target', 'X-Velocity Target without sacc', 'V without sacc');
+set(ax(2),'xlim',[0 length(D{trn}.eyeXv)],'ylim',[-80 80]);
+%%
+axes(ax(1));
+plot(D{trn}.t(indSacc(1) - 125:indSacc(1)-75), y2pred ,'b'); 
+ 
+       
+axes(ax(3));
+cla; %Clear axes 
+hold on; %hold all previous axes
+D{trn}.eyeXa = aiDiff(1/D{1}.sfr1,D{1}.win,D{trn}.eyeXvws);
+plot(D{trn}.t, D{trn}.eyeXa,'r'); %plot of eye acceleration in X was D{trn}.eyeXa
+plot(D{trn}.tScreen(1:end-2), diff(diff((D{trn}.target_x/D{1}.ppdx))./diff(D{trn}.tScreen)),'g'); %plot of target acceleration in X
+plot([0 length(D{trn}.eyeXa)], [0 0],'k');
+plot(tStep2*[1 1],[-5500 5500],'b');
+plot(D{trn}.t(indSacc(1) - 200:indSacc(1)), Arob200*ones(1, 201), 'b')
+plot(tAcc_off*[1 1],[-5500 5500],'c');
+
+
+plot((D{trn}.t(indSacc(1):endSacc(1))), (D{trn}.eyeXa(indSacc(1):endSacc(1))), 'c');%,'LineWidth',3, 'r');
+
+   %plot saccade
+for iSacc =  1:size(D{trn}.sacc,1)
+    plot(D{trn}.t(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2)), D{trn}.eyeXa(D{trn}.sacc(iSacc,1):D{trn}.sacc(iSacc,2)),'LineWidth',3);
+end
+
+
+
+legend('X-Acceleration Eye', 'X-Acceleration Target');%, 'A without sacc');
+set(ax(3),'xlim',[0 length(D{trn}.eyeXa)],'ylim',[-100 100]);
+
+
+%plot center line
+plot(-D{1}.screenWidth/2/D{1}.ppdx:0.5:D{1}.screenWidth/2/D{1}.ppdx,0,'k');
+plot(0,-D{1}.screenHeight/2/D{1}.ppdy:0.5:D{1}.screenHeight/2/D{1}.ppdy,'k');
+
+
+% finalize
+ sstr = fieldnames(h);
+ for i = 1:length(sstr)
+     set(eval(['h.' sstr{i}]),'visible','on')
+ end
+ 
+ cd(savePath);
+ save(D{1}.dFilename,'D');
+ cd(origPath);
