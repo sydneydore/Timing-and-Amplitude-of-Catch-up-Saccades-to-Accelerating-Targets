@@ -1,0 +1,199 @@
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+
+path_to_data = '/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv'
+
+df = pd.read_csv(path_to_data)
+df = pd.read_csv('/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv')
+
+df = df.dropna()
+
+df['RAbin'] = pd.cut(df['RA200'], bins = [(np.min(df['RA200'])), 0,(np.max(df['RA200']))], labels= ['Negative', 'Positive'])
+df['RSbin'] = pd.cut(df['RS100'], bins = [(np.min(df['RS100'])), 0,(np.max(df['RS100']))], labels= ['Negative', 'Positive'])
+
+#%%
+#Panel A
+
+df['RS100bins'] = pd.cut(df['RS100'], bins = [(np.min(df['RS100'])),-10, 0,10,(np.max(df['RS100']))], labels = [1,2,3,4])
+
+RS1 = df.loc[(df['RS100bins'] == 1),:]
+RS2 = df.loc[(df['RS100bins'] == 2),:]
+RS3 = df.loc[(df['RS100bins'] == 3),:]
+RS4 = df.loc[(df['RS100bins'] == 4),:]
+
+stepsize = 2
+binranges = np.arange(-10, 15, stepsize)
+binrange = np.size(binranges)
+
+
+saccmedians1_1 = stats.binned_statistic(RS1['PEstep'], RS1['ReactionTime'], statistic='median', bins=binranges)
+saccmedians2_1 = stats.binned_statistic(RS2['PEstep'], RS2['ReactionTime'], statistic='median', bins=binranges)
+saccmedians3_1 = stats.binned_statistic(RS3['PEstep'], RS3['ReactionTime'], statistic='median', bins=binranges)
+saccmedians4_1 = stats.binned_statistic(RS4['PEstep'], RS4['ReactionTime'], statistic='median', bins=binranges)
+
+
+rs1rt = RS1['ReactionTime']
+RS175min = stats.binned_statistic(RS1['PEstep'],RS1['ReactionTime'], statistic=lambda rs1rt: np.percentile(rs1rt, 25), bins=binranges)
+RS175max = stats.binned_statistic(RS1['PEstep'],RS1['ReactionTime'], statistic=lambda rs1rt: np.percentile(rs1rt, 75), bins=binranges)
+
+rs2rt = RS2['ReactionTime']
+RS275min = stats.binned_statistic(RS2['PEstep'],RS2['ReactionTime'], statistic=lambda rs2rt: np.percentile(rs2rt, 25), bins=binranges)
+RS275max = stats.binned_statistic(RS2['PEstep'],RS2['ReactionTime'], statistic=lambda rs2rt: np.percentile(rs2rt, 75), bins=binranges)
+
+rs3rt = RS3['ReactionTime']
+RS375min = stats.binned_statistic(RS3['PEstep'],RS3['ReactionTime'], statistic=lambda rs3rt: np.percentile(rs3rt, 25), bins=binranges)
+RS375max = stats.binned_statistic(RS3['PEstep'],RS3['ReactionTime'], statistic=lambda rs3rt: np.percentile(rs3rt, 75), bins=binranges)
+
+rs4rt = RS4['ReactionTime']
+RS475min = stats.binned_statistic(RS4['PEstep'],RS4['ReactionTime'], statistic=lambda rs4rt: np.percentile(rs4rt, 25), bins=binranges)
+RS475max = stats.binned_statistic(RS4['PEstep'],RS4['ReactionTime'], statistic=lambda rs4rt: np.percentile(rs4rt, 75), bins=binranges)
+
+
+
+y1 = np.zeros(np.shape(saccmedians1_1.bin_edges[0:-1]))
+y2 = np.zeros(np.shape(saccmedians2_1.bin_edges[0:-1]))
+y3 = np.zeros(np.shape(saccmedians3_1.bin_edges[0:-1]))
+y4 = np.zeros(np.shape(saccmedians4_1.bin_edges[0:-1]))
+
+
+
+plt.plot(saccmedians1_1.bin_edges[0:-1],saccmedians1_1[0], label = 'Large Negative VE')
+plt.plot(saccmedians2_1.bin_edges[0:-1],saccmedians2_1[0], label = 'Small Negative VE')
+plt.plot(saccmedians3_1.bin_edges[0:-1],saccmedians3_1[0], label = 'Small Positive VE')
+plt.plot(saccmedians4_1.bin_edges[0:-1],saccmedians4_1[0], label = 'Large Positive VE')
+
+
+plt.fill_between(saccmedians1_1.bin_edges[0:-1], y1+(RS175min[0]), y1+RS175max[0], alpha = 0.2)
+plt.fill_between(saccmedians2_1.bin_edges[0:-1], y2+(RS275min[0]), y2+RS275max[0], alpha = 0.2)
+plt.fill_between(saccmedians3_1.bin_edges[0:-1], y3+(RS375min[0]), y3+RS375max[0], alpha = 0.2)
+plt.fill_between(saccmedians4_1.bin_edges[0:-1], y4+(RS475min[0]), y4+RS475max[0], alpha = 0.2)
+
+
+
+plt.legend()
+plt.ylabel('Median Saccade Latency')
+plt.xlabel('Position Error at Target Step')
+plt.ylim(150,400)
+plt.gcf()
+plt.savefig('latencya.svg', format="svg")
+plt.title('Position Error vs. Latency binned by Velocity Errors')
+plt.show()
+
+
+#%%
+#Panel B
+
+df['RA200bins'] = pd.cut(df['RA200'], bins = [(np.min(df['RA200'])),-20, 0, 20,(np.max(df['RA200']))], labels = [1,2,3,4])
+
+RA1 = df.loc[(df['RA200bins'] == 1),:]
+RA2 = df.loc[(df['RA200bins'] == 2),:]
+RA3 = df.loc[(df['RA200bins'] == 3),:]
+RA4 = df.loc[(df['RA200bins'] == 4),:]
+
+
+stepsize = 2
+binranges = np.arange(-10, 15, stepsize)
+binrange = np.size(binranges)
+
+
+saccmedians1_1 = stats.binned_statistic(RA1['PEstep'], RA1['ReactionTime'], statistic='median', bins=binranges)
+
+saccmedians2_1 = stats.binned_statistic(RA2['PEstep'], RA2['ReactionTime'], statistic='median', bins=binranges)
+
+saccmedians3_1 = stats.binned_statistic(RA3['PEstep'], RA3['ReactionTime'], statistic='median', bins=binranges)
+
+saccmedians4_1 = stats.binned_statistic(RA4['PEstep'], RA4['ReactionTime'], statistic='median', bins=binranges)
+
+
+ra1rt = RA1['ReactionTime']
+RA175min = stats.binned_statistic(RA1['PEstep'],RA1['ReactionTime'], statistic=lambda ra1rt: np.percentile(ra1rt, 25), bins=binranges)
+RA175max = stats.binned_statistic(RA1['PEstep'],RA1['ReactionTime'], statistic=lambda ra1rt: np.percentile(ra1rt, 75), bins=binranges)
+
+ra2rt = RA2['ReactionTime']
+RA275min = stats.binned_statistic(RA2['PEstep'],RA2['ReactionTime'], statistic=lambda ra2rt: np.percentile(ra2rt, 25), bins=binranges)
+RA275max = stats.binned_statistic(RA2['PEstep'],RA2['ReactionTime'], statistic=lambda ra2rt: np.percentile(ra2rt, 75), bins=binranges)
+
+ra3rt = RA3['ReactionTime']
+RA375min = stats.binned_statistic(RA3['PEstep'],RA3['ReactionTime'], statistic=lambda ra3rt: np.percentile(ra3rt, 25), bins=binranges)
+RA375max = stats.binned_statistic(RA3['PEstep'],RA3['ReactionTime'], statistic=lambda ra3rt: np.percentile(ra3rt, 75), bins=binranges)
+
+rs4rt = RA4['ReactionTime']
+RA475min = stats.binned_statistic(RA4['PEstep'],RA4['ReactionTime'], statistic=lambda ra4rt: np.percentile(ra4rt, 25), bins=binranges)
+RA475max = stats.binned_statistic(RA4['PEstep'],RA4['ReactionTime'], statistic=lambda ra4rt: np.percentile(ra4rt, 75), bins=binranges)
+
+
+
+y1 = np.zeros(np.shape(saccmedians1_1.bin_edges[0:-1]))
+y2 = np.zeros(np.shape(saccmedians2_1.bin_edges[0:-1]))
+y3 = np.zeros(np.shape(saccmedians3_1.bin_edges[0:-1]))
+y4 = np.zeros(np.shape(saccmedians4_1.bin_edges[0:-1]))
+
+plt.plot(saccmedians1_1.bin_edges[0:-1],saccmedians1_1[0], label = 'Large Negative AE')
+plt.plot(saccmedians2_1.bin_edges[0:-1],saccmedians2_1[0], label = 'Small Negative AE')
+plt.plot(saccmedians3_1.bin_edges[0:-1],saccmedians3_1[0], label = 'Small Positive AE')
+plt.plot(saccmedians4_1.bin_edges[0:-1],saccmedians4_1[0], label = 'Large Positive AE')
+
+plt.fill_between(saccmedians1_1.bin_edges[0:-1], y1+(RA175min[0]), y1+RA175max[0], alpha = 0.2)
+plt.fill_between(saccmedians2_1.bin_edges[0:-1], y2+(RA275min[0]), y2+RA275max[0], alpha = 0.2)
+plt.fill_between(saccmedians3_1.bin_edges[0:-1], y3+(RA375min[0]), y3+RA375max[0], alpha = 0.2)
+plt.fill_between(saccmedians4_1.bin_edges[0:-1], y4+(RA475min[0]), y4+RA475max[0], alpha = 0.2)
+
+
+plt.legend()
+plt.ylabel('Median Saccade Latency')
+plt.xlabel('Position Error at Target Step')
+
+
+plt.ylim(150,400)
+plt.gcf()
+plt.savefig('latencyb.svg', format="svg")
+plt.title('Position Error vs. Latency binned by Acceleration Errors')
+plt.show()
+
+
+#%%
+#Panel C
+#amplitude vs latency binned by sign of AE
+
+stepsize = 2
+binranges = np.arange(-10, 14, stepsize)
+binrange = np.size(binranges)
+
+df['RAbin'] = pd.cut(df['RA200'], bins = [(np.min(df['RA200'])), 0,(np.max(df['RA200']))], labels= ['Negative', 'Positive'])
+posRA = df.loc[(df['RAbin'] == 'Positive'),:]
+negRA = df.loc[(df['RAbin'] == 'Negative'),:]
+
+
+amplatencypos = stats.binned_statistic(posRA['camp2'], posRA['ReactionTime'], statistic='median', bins=binranges)
+amplatencyneg = stats.binned_statistic(negRA['camp2'], negRA['ReactionTime'], statistic='median', bins=binranges)
+
+
+posrt = posRA['ReactionTime']
+bin_minpos = stats.binned_statistic(posRA['camp2'],posRA['ReactionTime'], statistic=lambda posrt: np.percentile(posrt, 25), bins=binranges)
+bin_maxpos = stats.binned_statistic(posRA['camp2'],posRA['ReactionTime'], statistic=lambda posrt: np.percentile(posrt, 75), bins=binranges)
+
+negrt = negRA['ReactionTime']
+bin_minneg = stats.binned_statistic(negRA['camp2'],negRA['ReactionTime'], statistic=lambda negrt: np.percentile(negrt, 25), bins=binranges)
+bin_maxneg = stats.binned_statistic(negRA['camp2'],negRA['ReactionTime'], statistic=lambda negrt: np.percentile(negrt, 75), bins=binranges)
+
+
+y1 = np.zeros(np.shape(amplatencypos[0]))
+y2 = np.zeros(np.shape(amplatencyneg[0]))
+plt.plot(amplatencypos.bin_edges[0:-1],amplatencypos[0],label = 'Positive AE', c = 'red')
+
+
+plt.plot(amplatencyneg.bin_edges[0:-1],amplatencyneg[0], label = 'Negative AE')
+
+
+plt.fill_between(amplatencypos.bin_edges[0:-1], y1+(bin_minpos[0]), y1+bin_maxpos[0], alpha = 0.2, color = 'red')
+plt.fill_between(amplatencyneg.bin_edges[0:-1], y2+(bin_minneg[0]), y2+bin_maxneg[0], alpha = 0.2)
+plt.legend()
+plt.ylabel('Median Saccade Latency (ms)')
+plt.xlabel('Saccade Amplitude (deg)')
+plt.title('Saccade Amplitude vs Latency')
+plt.xlim(-10,10)
+plt.savefig('Latencyc.svg', format="svg")
+plt.show()
