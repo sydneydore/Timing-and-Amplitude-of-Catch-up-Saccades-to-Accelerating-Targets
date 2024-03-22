@@ -1,0 +1,470 @@
+#Figure 4 b - Saccade Timing Hypothesis
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+
+path_to_data = '/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv'
+
+df = pd.read_csv(path_to_data)
+df = pd.read_csv('/Users/Sydney/Desktop/Saccade/Data/Pre-Processed Data.csv')
+
+
+#Compute Predicted position error at target step
+df['PEpred100step'] = df.PEtStep+((0.15)*df.RSstep)
+
+#Bin for sign of Retinal acceleration error at target step
+q_label = [1,2] 
+df['RAbin'] = pd.cut(df['RAstep'], bins = [(np.min(df['RAstep'])), 0,(np.max(df['RAstep']))], labels= q_label)
+
+#Bin sizes of predicted position error at target step - small and large for negative and positive retinal acceleration error 
+
+df['PEpredbin'] = pd.cut(df['PEpred100step'], bins = [(np.min(df['PEpred100step'])), -5, 0, 5, (np.max(df['PEpred100step']))], labels= ['large negative', 'small negative', 'small positive', 'large positive'])
+
+#Panel B
+
+#Create dataframes for each bin size of predicted position error at target step for both positive and negative retinal acceleration error
+
+PosPE = df.loc[(df['RAbin'] ==2),:]
+lNeg1 = PosPE.loc[(PosPE['PEpredbin'] =='large negative'),:]
+sNeg1 = PosPE.loc[(PosPE['PEpredbin'] =='small negative'),:]  
+lPos1 = PosPE.loc[(PosPE['PEpredbin'] =='large positive'),:]            
+sPos1 = PosPE.loc[(PosPE['PEpredbin'] =='small positive'),:] 
+
+NegPE = df.loc[(df['RAbin'] ==1),:]
+lNeg2 = NegPE.loc[(NegPE['PEpredbin'] =='large negative'),:]
+sNeg2 = NegPE.loc[(NegPE['PEpredbin'] =='small negative'),:]  
+lPos2 = NegPE.loc[(NegPE['PEpredbin'] =='large positive'),:]            
+sPos2 = NegPE.loc[(NegPE['PEpredbin'] =='small positive'),:] 
+
+#Create dataframes for each individual subject 
+
+subject1 = df.loc[(df['SubjectID'] ==1),:]
+subject2 = df.loc[(df['SubjectID'] ==2),:]
+subject3 = df.loc[(df['SubjectID'] ==3),:]
+subject4 = df.loc[(df['SubjectID'] ==4),:]
+subject6 = df.loc[(df['SubjectID'] ==6),:]
+subject7 = df.loc[(df['SubjectID'] ==7),:]
+subject9 = df.loc[(df['SubjectID'] ==9),:]
+subject10 = df.loc[(df['SubjectID'] ==10),:]
+subject11 = df.loc[(df['SubjectID'] ==11),:]
+subject12 = df.loc[(df['SubjectID'] ==12),:]
+subject13 = df.loc[(df['SubjectID'] ==13),:]
+subject14 = df.loc[(df['SubjectID'] ==14),:]
+subject15 = df.loc[(df['SubjectID'] ==15),:]
+
+
+#Create dataframes for each subject's bins by sign of retinal acceleration error
+
+#subject 1 rxts
+#positive RA
+sub1_a = lNeg1.loc[(lNeg1['SubjectID']==1), :]
+sub1_b = sNeg1.loc[(sNeg1['SubjectID']==1), :]
+sub1_c = lPos1.loc[(lPos1['SubjectID']==1), :]
+sub1_d = sPos1.loc[(sPos1['SubjectID']==1), :]
+#negative RA
+sub1_e = lNeg2.loc[(lNeg2['SubjectID']==1), :]
+sub1_f = sNeg2.loc[(sNeg2['SubjectID']==1), :]
+sub1_g = lPos2.loc[(lPos2['SubjectID']==1), :]
+sub1_h = sPos2.loc[(sPos2['SubjectID']==1), :]
+
+#subject 2 rxts
+#positive RA 
+sub2_a = lNeg1.loc[(lNeg1['SubjectID']==2), :]
+sub2_b = sNeg1.loc[(sNeg1['SubjectID']==2), :]
+sub2_c = lPos1.loc[(lPos1['SubjectID']==2), :]
+sub2_d = sPos1.loc[(sPos1['SubjectID']==2), :]
+#negative RA
+sub2_e = lNeg2.loc[(lNeg2['SubjectID']==2), :]
+sub2_f = sNeg2.loc[(sNeg2['SubjectID']==2), :]
+sub2_g = lPos2.loc[(lPos2['SubjectID']==2), :]
+sub2_h = sPos2.loc[(sPos2['SubjectID']==2), :]
+
+#subject 3 rxts
+#positive RA 
+sub3_a = lNeg1.loc[(lNeg1['SubjectID']==3), :]
+sub3_b = sNeg1.loc[(sNeg1['SubjectID']==3), :]
+sub3_c = lPos1.loc[(lPos1['SubjectID']==3), :]
+sub3_d = sPos1.loc[(sPos1['SubjectID']==3), :]
+#negative RA
+sub3_e = lNeg2.loc[(lNeg2['SubjectID']==3), :]
+sub3_f = sNeg2.loc[(sNeg2['SubjectID']==3), :]
+sub3_g = lPos2.loc[(lPos2['SubjectID']==3), :]
+sub3_h = sPos2.loc[(sPos2['SubjectID']==3), :]
+
+#subject 4 rxts
+#positive RA 
+sub4_a = lNeg1.loc[(lNeg1['SubjectID']==4), :]
+sub4_b = sNeg1.loc[(sNeg1['SubjectID']==4), :]
+sub4_c = lPos1.loc[(lPos1['SubjectID']==4), :]
+sub4_d = sPos1.loc[(sPos1['SubjectID']==4), :]
+#negative RA
+sub4_e = lNeg2.loc[(lNeg2['SubjectID']==4), :]
+sub4_f = sNeg2.loc[(sNeg2['SubjectID']==4), :]
+sub4_g = lPos2.loc[(lPos2['SubjectID']==4), :]
+sub4_h = sPos2.loc[(sPos2['SubjectID']==4), :]
+
+#subject 6 rxts
+#positive RA 
+sub6_a = lNeg1.loc[(lNeg1['SubjectID']==6), :]
+sub6_b = sNeg1.loc[(sNeg1['SubjectID']==6), :]
+sub6_c = lPos1.loc[(lPos1['SubjectID']==6), :]
+sub6_d = sPos1.loc[(sPos1['SubjectID']==6), :]
+#negative RA
+sub6_e = lNeg2.loc[(lNeg2['SubjectID']==6), :]
+sub6_f = sNeg2.loc[(sNeg2['SubjectID']==6), :]
+sub6_g = lPos2.loc[(lPos2['SubjectID']==6), :]
+sub6_h = sPos2.loc[(sPos2['SubjectID']==6), :]
+
+#subject 7 rxts
+#positive RA 
+sub7_a = lNeg1.loc[(lNeg1['SubjectID']==7), :]
+sub7_b = sNeg1.loc[(sNeg1['SubjectID']==7), :]
+sub7_c = lPos1.loc[(lPos1['SubjectID']==7), :]
+sub7_d = sPos1.loc[(sPos1['SubjectID']==7), :]
+#negative RA
+sub7_e = lNeg2.loc[(lNeg2['SubjectID']==7), :]
+sub7_f = sNeg2.loc[(sNeg2['SubjectID']==7), :]
+sub7_g = lPos2.loc[(lPos2['SubjectID']==7), :]
+sub7_h = sPos2.loc[(sPos2['SubjectID']==7), :]
+
+#subject 9 rxts
+#positive RA 
+sub9_a = lNeg1.loc[(lNeg1['SubjectID']==9), :]
+sub9_b = sNeg1.loc[(sNeg1['SubjectID']==9), :]
+sub9_c = lPos1.loc[(lPos1['SubjectID']==9), :]
+sub9_d = sPos1.loc[(sPos1['SubjectID']==9), :]
+#negative RA
+sub9_e = lNeg2.loc[(lNeg2['SubjectID']==9), :]
+sub9_f = sNeg2.loc[(sNeg2['SubjectID']==9), :]
+sub9_g = lPos2.loc[(lPos2['SubjectID']==9), :]
+sub9_h = sPos2.loc[(sPos2['SubjectID']==9), :]
+
+#subject 10 rxts
+#positive RA 
+sub10_a = lNeg1.loc[(lNeg1['SubjectID']==10), :]
+sub10_b = sNeg1.loc[(sNeg1['SubjectID']==10), :]
+sub10_c = lPos1.loc[(lPos1['SubjectID']==10), :]
+sub10_d = sPos1.loc[(sPos1['SubjectID']==10), :]
+#negative RA
+sub10_e = lNeg2.loc[(lNeg2['SubjectID']==10), :]
+sub10_f = sNeg2.loc[(sNeg2['SubjectID']==10), :]
+sub10_g = lPos2.loc[(lPos2['SubjectID']==10), :]
+sub10_h = sPos2.loc[(sPos2['SubjectID']==10), :]
+
+#subject 11 rxts
+#positive RA 
+sub11_a = lNeg1.loc[(lNeg1['SubjectID']==11), :]
+sub11_b = sNeg1.loc[(sNeg1['SubjectID']==11), :]
+sub11_c = lPos1.loc[(lPos1['SubjectID']==11), :]
+sub11_d = sPos1.loc[(sPos1['SubjectID']==11), :]
+#negative RA
+sub11_e = lNeg2.loc[(lNeg2['SubjectID']==11), :]
+sub11_f = sNeg2.loc[(sNeg2['SubjectID']==11), :]
+sub11_g = lPos2.loc[(lPos2['SubjectID']==11), :]
+sub11_h = sPos2.loc[(sPos2['SubjectID']==11), :]
+
+#subject 12 rxts
+#positive RA 
+sub12_a = lNeg1.loc[(lNeg1['SubjectID']==12), :]
+sub12_b = sNeg1.loc[(sNeg1['SubjectID']==12), :]
+sub12_c = lPos1.loc[(lPos1['SubjectID']==12), :]
+sub12_d = sPos1.loc[(sPos1['SubjectID']==12), :]
+#negative RA
+sub12_e = lNeg2.loc[(lNeg2['SubjectID']==12), :]
+sub12_f = sNeg2.loc[(sNeg2['SubjectID']==12), :]
+sub12_g = lPos2.loc[(lPos2['SubjectID']==12), :]
+sub12_h = sPos2.loc[(sPos2['SubjectID']==12), :]
+
+#subject 13 rxts
+#positive RA 
+sub13_a = lNeg1.loc[(lNeg1['SubjectID']==13), :]
+sub13_b = sNeg1.loc[(sNeg1['SubjectID']==13), :]
+sub13_c = lPos1.loc[(lPos1['SubjectID']==13), :]
+sub13_d = sPos1.loc[(sPos1['SubjectID']==13), :]
+#negative RA
+sub13_e = lNeg2.loc[(lNeg2['SubjectID']==13), :]
+sub13_f = sNeg2.loc[(sNeg2['SubjectID']==13), :]
+sub13_g = lPos2.loc[(lPos2['SubjectID']==13), :]
+sub13_h = sPos2.loc[(sPos2['SubjectID']==13), :]
+
+#subject 14 rxts
+#positive RA 
+sub14_a = lNeg1.loc[(lNeg1['SubjectID']==14), :]
+sub14_b = sNeg1.loc[(sNeg1['SubjectID']==14), :]
+sub14_c = lPos1.loc[(lPos1['SubjectID']==14), :]
+sub14_d = sPos1.loc[(sPos1['SubjectID']==14), :]
+#negative RA
+sub14_e = lNeg2.loc[(lNeg2['SubjectID']==14), :]
+sub14_f = sNeg2.loc[(sNeg2['SubjectID']==14), :]
+sub14_g = lPos2.loc[(lPos2['SubjectID']==14), :]
+sub14_h = sPos2.loc[(sPos2['SubjectID']==14), :]
+
+#subject 15 rxts
+#positive RA 
+sub15_a = lNeg1.loc[(lNeg1['SubjectID']==15), :]
+sub15_b = sNeg1.loc[(sNeg1['SubjectID']==15), :]
+sub15_c = lPos1.loc[(lPos1['SubjectID']==15), :]
+sub15_d = sPos1.loc[(sPos1['SubjectID']==15), :]
+#negative RA
+sub15_e = lNeg2.loc[(lNeg2['SubjectID']==15), :]
+sub15_f = sNeg2.loc[(sNeg2['SubjectID']==15), :]
+sub15_g = lPos2.loc[(lPos2['SubjectID']==15), :]
+sub15_h = sPos2.loc[(sPos2['SubjectID']==15), :]
+
+#Positive RA large negative individual subject medians
+sub1amed = np.median(sub1_a['ReactionTime'])
+sub2amed = np.median(sub2_a['ReactionTime'])
+sub3amed = np.median(sub3_a['ReactionTime'])
+sub4amed = np.median(sub4_a['ReactionTime'])
+sub6amed = np.median(sub6_a['ReactionTime'])
+sub7amed = np.median(sub7_a['ReactionTime'])
+sub9amed = np.median(sub9_a['ReactionTime'])
+sub10amed = np.median(sub10_a['ReactionTime'])
+sub11amed = np.median(sub11_a['ReactionTime'])
+sub12amed = np.median(sub12_a['ReactionTime'])
+sub13amed = np.median(sub13_a['ReactionTime'])
+sub14amed = np.median(sub14_a['ReactionTime'])
+sub15amed = np.median(sub15_a['ReactionTime'])
+
+PosRAlNeg = np.array([sub1amed, sub2amed, sub3amed, sub4amed, sub6amed, sub7amed, sub9amed, sub10amed, sub11amed, sub12amed, sub13amed, sub14amed, sub15amed])
+
+
+#negative RA large negative ind. subjects 
+sub1emed = np.median(sub1_e['ReactionTime'])
+sub2emed = np.median(sub2_e['ReactionTime'])
+sub3emed = np.median(sub3_e['ReactionTime'])
+sub4emed = np.median(sub4_e['ReactionTime'])
+sub6emed = np.median(sub6_e['ReactionTime'])
+sub7emed = np.median(sub7_e['ReactionTime'])
+sub9emed = np.median(sub9_e['ReactionTime'])
+sub10emed = np.median(sub10_e['ReactionTime'])
+sub11emed = np.median(sub11_e['ReactionTime'])
+sub12emed = np.median(sub12_e['ReactionTime'])
+sub13emed = np.median(sub13_e['ReactionTime'])
+sub14emed = np.median(sub14_e['ReactionTime'])
+sub15emed = np.median(sub15_e['ReactionTime'])
+
+NegRAlNeg = ([sub1emed, sub2emed, sub3emed, sub4emed, sub6emed, sub7emed, sub9emed, sub10emed, sub11emed, sub12emed, sub13emed, sub14emed, sub15emed])
+
+#positiveRA small negative ind. subject medians
+sub1bmed = np.median(sub1_b['ReactionTime'])
+sub2bmed = np.median(sub2_b['ReactionTime'])
+sub3bmed = np.median(sub3_b['ReactionTime'])
+sub4bmed = np.median(sub4_b['ReactionTime'])
+sub6bmed = np.median(sub6_b['ReactionTime'])
+sub7bmed = np.median(sub7_b['ReactionTime'])
+sub9bmed = np.median(sub9_b['ReactionTime'])
+sub10bmed = np.median(sub10_b['ReactionTime'])
+sub11bmed = np.median(sub11_b['ReactionTime'])
+sub12bmed = np.median(sub12_b['ReactionTime'])
+sub13bmed = np.median(sub13_b['ReactionTime'])
+sub14bmed = np.median(sub14_b['ReactionTime'])
+sub15bmed = np.median(sub15_b['ReactionTime'])
+
+PosRAsNeg = ([sub1bmed, sub2bmed, sub3bmed, sub4bmed, sub6bmed, sub7bmed,sub9bmed, sub10bmed, sub11bmed, sub12bmed, sub13bmed, sub14bmed, sub15bmed])
+
+
+#negative RA small negative ind. subject medians 
+sub1fmed = np.median(sub1_f['ReactionTime'])
+sub2fmed = np.median(sub2_f['ReactionTime'])
+sub3fmed = np.median(sub3_f['ReactionTime'])
+sub4fmed = np.median(sub4_f['ReactionTime'])
+sub6fmed = np.median(sub6_f['ReactionTime'])
+sub7fmed = np.median(sub7_f['ReactionTime'])
+sub9fmed = np.median(sub9_f['ReactionTime'])
+sub10fmed = np.median(sub10_f['ReactionTime'])
+sub11fmed = np.median(sub11_f['ReactionTime'])
+sub12fmed = np.median(sub12_f['ReactionTime'])
+sub13fmed = np.median(sub13_f['ReactionTime'])
+sub14fmed = np.median(sub14_f['ReactionTime'])
+sub15fmed = np.median(sub15_f['ReactionTime'])
+
+NegRAsNeg = ([sub1fmed, sub2fmed, sub3fmed, sub4fmed, sub6fmed, sub7fmed, sub9fmed, sub10fmed, sub11fmed, sub12fmed, sub13fmed, sub14fmed, sub15fmed])
+
+#positive RA small positive ind. subject medians
+sub1dmed = np.median(sub1_d['ReactionTime'])
+sub2dmed = np.median(sub2_d['ReactionTime'])
+sub3dmed = np.median(sub3_d['ReactionTime'])
+sub4dmed = np.median(sub4_d['ReactionTime'])
+sub6dmed = np.median(sub6_d['ReactionTime'])
+sub7dmed = np.median(sub7_d['ReactionTime'])
+sub9dmed = np.median(sub9_d['ReactionTime'])
+sub10dmed = np.median(sub10_d['ReactionTime'])
+sub11dmed = np.median(sub11_d['ReactionTime'])
+sub12dmed = np.median(sub12_d['ReactionTime'])
+sub13dmed = np.median(sub13_d['ReactionTime'])
+sub14dmed = np.median(sub14_d['ReactionTime'])
+sub15dmed = np.median(sub15_d['ReactionTime'])
+
+PosRAsPos = ([sub1dmed, sub2dmed, sub3dmed, sub4dmed, sub6dmed, sub7dmed, sub9dmed, sub10dmed, sub11dmed, sub12dmed, sub13dmed, sub14dmed, sub15dmed])
+
+#negative RA small positive ind. subject medians 
+sub1hmed = np.median(sub1_h['ReactionTime'])
+sub2hmed = np.median(sub2_h['ReactionTime'])
+sub3hmed = np.median(sub3_h['ReactionTime'])
+sub4hmed = np.median(sub4_h['ReactionTime'])
+sub6hmed = np.median(sub6_h['ReactionTime'])
+sub7hmed = np.median(sub7_h['ReactionTime'])
+sub9hmed = np.median(sub9_h['ReactionTime'])
+sub10hmed = np.median(sub10_h['ReactionTime'])
+sub11hmed = np.median(sub11_h['ReactionTime'])
+sub12hmed = np.median(sub12_h['ReactionTime'])
+sub13hmed = np.median(sub13_h['ReactionTime'])
+sub14hmed = np.median(sub14_h['ReactionTime'])
+sub15hmed = np.median(sub15_h['ReactionTime'])
+
+NegRAsPos = ([sub1hmed, sub2hmed, sub3hmed, sub4hmed, sub6hmed, sub7hmed, sub9hmed, sub10hmed, sub11hmed, sub12hmed, sub13hmed, sub14hmed, sub15hmed])
+
+#positive RA large positive ind. subject medians
+sub1cmed = np.median(sub1_c['ReactionTime'])
+sub2cmed = np.median(sub2_c['ReactionTime'])
+sub3cmed = np.median(sub3_c['ReactionTime'])
+sub4cmed = np.median(sub4_c['ReactionTime'])
+sub6cmed = np.median(sub6_c['ReactionTime'])
+sub7cmed = np.median(sub7_c['ReactionTime'])
+sub9cmed = np.median(sub9_c['ReactionTime'])
+sub10cmed = np.median(sub10_c['ReactionTime'])
+sub11cmed = np.median(sub11_c['ReactionTime'])
+sub12cmed = np.median(sub12_c['ReactionTime'])
+sub13cmed = np.median(sub13_c['ReactionTime'])
+sub14cmed = np.median(sub14_c['ReactionTime'])
+sub15cmed = np.median(sub15_c['ReactionTime'])
+
+PosRAlPos = ([sub1cmed, sub2cmed, sub3cmed, sub4cmed, sub6cmed, sub7cmed, sub9cmed, sub10cmed, sub11cmed, sub12cmed, sub13cmed, sub14cmed, sub15cmed])
+
+#negative RA large positive ind. subject medians 
+sub1gmed = np.median(sub1_g['ReactionTime'])
+sub2gmed = np.median(sub2_g['ReactionTime'])
+sub3gmed = np.median(sub3_g['ReactionTime'])
+sub4gmed = np.median(sub4_g['ReactionTime'])
+sub6gmed = np.median(sub6_g['ReactionTime'])
+sub7gmed = np.median(sub7_g['ReactionTime'])
+sub9gmed = np.median(sub9_g['ReactionTime'])
+sub10gmed = np.median(sub10_g['ReactionTime'])
+sub11gmed = np.median(sub11_g['ReactionTime'])
+sub12gmed = np.median(sub12_g['ReactionTime'])
+sub13gmed = np.median(sub13_g['ReactionTime'])
+sub14gmed = np.median(sub14_g['ReactionTime'])
+sub15gmed = np.median(sub15_g['ReactionTime'])
+
+NegRAlPos = ([sub1gmed, sub2gmed, sub3gmed, sub4gmed, sub6gmed, sub7gmed, sub9gmed, sub10gmed, sub11gmed, sub12gmed, sub13gmed, sub14gmed, sub15gmed])
+
+#Reshape into new dataframe
+posRA = np.vstack((PosRAlNeg,PosRAsNeg, PosRAsPos, PosRAlPos))
+posRA = np.transpose(posRA)
+negRA = np.vstack((NegRAlNeg, NegRAsNeg, NegRAsPos, NegRAlPos))
+negRA = np.transpose(negRA)
+
+#Compute medians for each bin
+lNeg1med = np.median(lNeg1['ReactionTime'])
+lNeg1std = np.std(lNeg1['ReactionTime'])
+sNeg1med = np.median(sNeg1['ReactionTime'])
+sNeg1std = np.std(sNeg1['ReactionTime'])
+sPos1med = np.median(sPos1['ReactionTime'])
+sPos1std = np.std(sPos1['ReactionTime'])
+lPos1med = np.median(lPos1['ReactionTime'])
+lPos1std = np.std(lPos1['ReactionTime'])
+posRAbins = np.array([lNeg1med,sNeg1med, sPos1med, lPos1med])
+posRAstds = np.array([lNeg1std,sNeg1std, sPos1std, lPos1std ])
+                      
+
+lNeg2med = np.median(lNeg2['ReactionTime'])
+lNeg2std = np.std(lNeg2['ReactionTime'])
+sNeg2med = np.median(sNeg2['ReactionTime'])
+sNeg2std = np.std(sNeg2['ReactionTime'])
+sPos2med = np.median(sPos2['ReactionTime'])
+sPos2std = np.std(sPos2['ReactionTime'])
+lPos2med = np.median(lPos2['ReactionTime'])
+lPos2std = np.std(lPos2['ReactionTime'])
+negRAbins = np.array([lNeg2med,sNeg2med, sPos2med, lPos2med])
+negRAstds = np.array([lNeg2std,sNeg2std, sPos2std, lPos2std])
+
+labels = ['<-5\u00b0 ', '-5\u00b0 - 0\u00b0', '0\u00b0 - 5\u00b0', '>5\u00b0']
+
+x = np.arange(len(labels))  # the label locations
+width = 0.4 # the width of the bars
+
+fig, ax = plt.subplots()
+
+
+#matrices for line plots
+xposlneg = [-0.2, 0.2]
+
+ax.plot(xposlneg, [sub1amed, sub1emed],  c = 'b')
+ax.plot(xposlneg, [sub2amed, sub2emed], c = 'g')
+ax.plot(xposlneg, [sub3amed, sub3emed], c = 'r')
+ax.plot(xposlneg, [sub4amed, sub4emed],c = 'c')
+ax.plot(xposlneg, [sub6amed, sub6emed],c = 'm')
+ax.plot(xposlneg, [sub7amed, sub7emed], c = 'y')
+ax.plot(xposlneg, [sub9amed, sub9emed], c = 'orange')
+ax.plot(xposlneg, [sub10amed, sub10emed], c = 'lime')
+ax.plot(xposlneg, [sub11amed, sub11emed], c = 'navy')
+ax.plot(xposlneg, [sub12amed, sub12emed], c = 'maroon')
+ax.plot(xposlneg, [sub13amed, sub13emed], c = 'pink')
+ax.plot(xposlneg, [sub14amed, sub14emed], c = 'darkslategrey')
+ax.plot(xposlneg, [sub15amed, sub15emed], c = 'black')
+
+xpossneg = [0.8, 1.2]
+ax.plot(xpossneg, [sub1bmed, sub1fmed], c = 'b')
+ax.plot(xpossneg, [sub2bmed, sub2fmed], c = 'g')
+ax.plot(xpossneg, [sub3bmed, sub3fmed], c = 'r')
+ax.plot(xpossneg, [sub4bmed, sub4fmed], c = 'c')
+ax.plot(xpossneg, [sub6bmed, sub6fmed], c = 'm')
+ax.plot(xpossneg, [sub7bmed, sub7fmed], c = 'y')
+ax.plot(xpossneg, [sub9bmed, sub9fmed], c = 'orange')
+ax.plot(xpossneg, [sub10bmed, sub10fmed], c = 'lime')
+ax.plot(xpossneg, [sub11bmed, sub11fmed], c = 'navy')
+ax.plot(xpossneg, [sub12bmed, sub12fmed], c = 'maroon')
+ax.plot(xpossneg, [sub13bmed, sub13fmed], c = 'pink')
+ax.plot(xpossneg, [sub14bmed, sub14fmed], c = 'darkslategrey')
+ax.plot(xpossneg, [sub15bmed, sub15fmed], c = 'black')
+
+xposspos = [1.8, 2.2]
+ax.plot(xposspos, [sub1dmed, sub1hmed], c = 'b')
+ax.plot(xposspos, [sub2dmed, sub2hmed], c = 'g')
+ax.plot(xposspos, [sub3dmed, sub3hmed], c = 'r')
+ax.plot(xposspos, [sub4dmed, sub4hmed], c = 'c')
+ax.plot(xposspos, [sub6dmed, sub6hmed], c = 'm')
+ax.plot(xposspos, [sub7dmed, sub7hmed], c = 'y')
+ax.plot(xposspos, [sub9dmed, sub9hmed], c = 'orange')
+ax.plot(xposspos, [sub10dmed, sub10hmed], c = 'lime')
+ax.plot(xposspos, [sub11dmed, sub11hmed], c = 'navy')
+ax.plot(xposspos, [sub12dmed, sub12hmed], c = 'maroon')
+ax.plot(xposspos, [sub13dmed, sub13hmed], c = 'pink')
+ax.plot(xposspos, [sub14dmed, sub14hmed], c = 'darkslategrey')
+ax.plot(xposspos, [sub15dmed, sub15hmed], c = 'black')
+
+xposlpos = [2.8, 3.2]
+ax.plot(xposlpos, [sub1cmed, sub1gmed], c = 'b')
+ax.plot(xposlpos, [sub2cmed, sub2gmed], c = 'g')
+ax.plot(xposlpos, [sub3cmed, sub3gmed], c = 'r')
+ax.plot(xposlpos, [sub4cmed, sub4gmed], c = 'c')
+ax.plot(xposlpos, [sub6cmed, sub6gmed], c = 'm')
+ax.plot(xposlpos, [sub7cmed, sub7gmed], c = 'y')
+ax.plot(xposlpos, [sub9cmed, sub9gmed], c = 'orange')
+ax.plot(xposlpos, [sub10cmed, sub10gmed], c = 'lime')
+ax.plot(xposlpos, [sub11cmed, sub11gmed], c = 'navy')
+ax.plot(xposlpos, [sub12cmed, sub12gmed], c = 'maroon')
+ax.plot(xposlpos, [sub13cmed, sub13gmed], c = 'pink')
+ax.plot(xposlpos, [sub14cmed, sub14gmed], c = 'darkslategrey')
+ax.plot(xposlpos, [sub15cmed, sub15gmed], c = 'black')
+
+
+
+rects1 = ax.bar(x - width/2, posRAbins, width, label='Positive RA', color = 'white', edgecolor='black', alpha = 1, linewidth = 1.2, yerr = posRAstds, capsize = 5)
+rects2 = ax.bar(x + width/2, negRAbins, width, label='Negative RA', color = 'grey', edgecolor='black',alpha = 1, linewidth = 1.2, yerr = negRAstds, capsize = 5)
+
+
+ax.set_ylabel('Median Saccade Latencies')
+ax.set_title('Saccade Latencies by PEpred Size and Sign of RA')
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
+ax.text(1,255, '*')
+ax.legend()
+fig.tight_layout()
+plt.show()
