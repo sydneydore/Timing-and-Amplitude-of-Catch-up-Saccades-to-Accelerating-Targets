@@ -1,0 +1,143 @@
+function D = New_Load
+
+try
+    clear all;
+   origPath = '/Users/Sydney/Desktop/Saccade/Code';
+   loadPath = '/Users/Sydney/Desktop/Saccade/Data/Data_new';
+   savePath = '/Users/Sydney/Desktop/Saccade/Data/Data_new';
+   cd(loadPath);
+    [filename1,pathname1] = uigetfile({'*.mat'},'Choose XP record file you want to load....'); %load in mat-file = Trial parameters
+    cd(pathname1);
+    load([pathname1 filename1]);
+    firstload = 0;
+    
+    if ~contains(filename1,'D.mat') == 1
+        firstload = 1;
+        [filename2,pathname2] = uigetfile({'*.edf'},'Choose Eyelink edf file you want to load....'); %load in edf-file = EyeLink
+   
+        cd(origPath);
+        try
+            [X.sampledata,X.eventdata,X.mestimes,X.messages,X.preamble,X.samplerate,X.numtrials,X.button,X.input]=el2matInputEvent([pathname2 filename2],'fixation','trialEnd');%change eyelink- to mat-file
+        catch
+            warning(['Error processing file: ' filename2]);
+            D=[];
+            cd(origPath);
+            clear all;
+            return
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+    
+        s = {'fixation','vel','step2','acc_off','fixation2','trialEnd'}; %training xp
+        [tFixation, mesFixation]=getELmes(X, s{1}); % tFixation : timestamps (ms) of fixation onset
+        [tVel, mesVel]=getELmes(X, s{2}); % tStep1: timestamp (ms) of target step
+        [tStep2, mesStep2]=getELmes(X, s{3}); % tRamp1: timestamp (ms) of target initial movement
+        [tAcc_off, mesAcc_off]=getELmes(X, s{4}); %tStep2: timestamp (ms) of second step
+        [tFixation2, mesFixation2] = getELmes(X, s{5}); %tRamp2: timestamp (ms) of second ramp
+        [tTrialEnd, mesTrialEnd]=getELmes(X, s{6});%tFixation2: timestamp (ms) of end fixation period
+        
+                
+        cd(origPath);
+        
+        %construct D
+        
+        % parameter from xp file
+        D{1}.dFilename = [filename2(1:end-4) 'D.mat']; % General filename
+        D{1}.xpFilename = filename1;	% Mat filename
+        D{1}.edfFilename = filename2;	% Edf filename
+        D{1}.subjectID = subjectID;
+        D{1}.blockNumber = blockNumber;
+        D{1}.numTrials = numTrials;
+        
+        D{1}.dist2Screen =  dist2Screen;
+        D{1}.screenWidth = screenWidth;
+        D{1}.screenHeight = screenHeight;
+        D{1}.xCenter = xCenter;
+        D{1}.yCenter = yCenter;
+        D{1}.xPixels = xPixels;
+        D{1}.yPixels = yPixels;
+        D{1}.ppdx = ppdx;
+        D{1}.ppdy = ppdy;
+        D{1}.ppcmx = ppcmx;
+        D{1}.ppcmy = ppcmy;
+        D{1}.frameRate = frameRate;
+        D{1}.dotSizePix = dotSizePix;
+        D{1}.dotColor = dotColor;
+        D{1}.flipInterval =  ifi;
+        D{1}.frame_infos = frame_infos;
+        D{1}.params = params; %change to param? 
+        D{1}.exp_array = exp_array;
+        D{1}.vels = vels;
+        D{1}.nFrames = frame_infos(end,:);
+        %eyelink
+        D{1}.EFIX = 8;
+        D{1}.ESACC=6;
+        D{1}.EBLINK=4;
+        D{1}.MESSAGEEVENT = 24;
+        D{1}.BUTTONEVENT = 25;
+        D{1}.INPUTEVENT = 28;
+        D{1}.message = s ;
+        D{1}.cutoff = 50; % cut-off frequency for filter orig. 50
+        D{1}.sfr1 = 1000; % sampling frequency
+        D{1}.win = 0.005; % time window (1/2 width) for differentiation orig 0.005
+        
+        for aTrial = 1: D{1}.numTrials
+            % parameter from xp file 
+            D{aTrial}.tScreen = (D{1}.exp_array{4,aTrial} - D{1}.exp_array{4,aTrial}(1)) * 1000; % time of target on screen, first frame is the 0s reference point
+            D{aTrial}.target_x = D{1}.exp_array{1,aTrial}; % target movement data in degrees
+            D{aTrial}.target_v = vel_values; %vels{aTrial};%was vels{aTrial};%(:,4); % target velocity matrix in degrees
+            D{aTrial}.vel = D{1}.params(3,aTrial);
+            D{aTrial}.initial_condition = D{1}.params(2,aTrial);
+            D{aTrial}.a = D{1}.params(4,aTrial);
+            D{aTrial}.trial_type = D{1}.params(1,aTrial);
+            
+
+            %eyelink data  
+           
+            D{aTrial}.trial_start = tFixation(aTrial);
+            D{aTrial}.tFixation = tFixation(aTrial) - tFixation(aTrial);
+            D{aTrial}.tVel = tVel(aTrial) - tFixation(aTrial);
+            D{aTrial}.tStep2 = tStep2(aTrial)- tFixation(aTrial);
+            D{aTrial}.tAcc_off = tAcc_off(aTrial) - tFixation(aTrial);
+            D{aTrial}.tFixation2 = tFixation2(aTrial) - tFixation(aTrial);
+            D{aTrial}.tTrialEnd = tTrialEnd(aTrial) - tFixation(aTrial);
+            
+            indBegin = find(X.sampledata(1,:) >= tFixation(aTrial),1);
+    
+            indEnd = find(X.sampledata(1,:) == tTrialEnd(aTrial)-1,1);
+            D{aTrial}.eyeX = rad2deg(atan((X.sampledata(2,indBegin:indEnd)-D{1}.xCenter)/D{1}.dist2Screen/D{1}.ppcmx));% eye X position (degree)
+            D{aTrial}.offSet = D{aTrial}.eyeX(1) - D{aTrial}.target_x(1); %This is done to overcome calibration issues with eyelink. In each trial the starting eye pos is matched to the target start pos.
+            D{aTrial}.eyeY = rad2deg(atan((X.sampledata(3,indBegin:indEnd)-D{1}.yCenter)/D{1}.dist2Screen/D{1}.ppcmy)); % eye Y position (degree) 
+            D{aTrial}.t = (0:length(D{aTrial}.eyeX)-1)/D{1}.sfr1*1000;%ms
+            D{aTrial}.target_x_interp = interp1(D{aTrial}.tScreen, D{aTrial}.target_x, D{aTrial}.t); %interpolated position of target used for later analysis for direct comparison
+            D{aTrial}.target_v_interp = interp1(D{aTrial}.tScreen, D{aTrial}.target_v, D{aTrial.t}); %after t screen, (D{aTrial}.tFixation:D{aTrial}.tTrialEnd) %after.t
+            D{aTrial}.good = 0;
+            D{aTrial}.antic = 0;
+            D{aTrial}.TF = (D{aTrial}.tTrialEnd-D{aTrial}.tFixation)/D{1}.frame_infos(7,aTrial);
+            D{aTrial}.tTarget = [1:D{1}.frame_infos(7,aTrial)]*D{aTrial}.TF;
+            
+        end
+        
+        % filter signals & differentiate
+        for aTrial = 1:numTrials
+            D{aTrial}.eyeX = autoregfiltinpart(D{1}.sfr1,D{1}.cutoff,D{aTrial}.eyeX);
+            D{aTrial}.eyeY = autoregfiltinpart(D{1}.sfr1,D{1}.cutoff,D{aTrial}.eyeY);
+            
+            D{aTrial}.eyeXv = aiDiff(1/D{1}.sfr1,D{1}.win,D{aTrial}.eyeX);
+            D{aTrial}.eyeYv = aiDiff(1/D{1}.sfr1,D{1}.win,D{aTrial}.eyeY);
+            D{aTrial}.eyeVv = sqrt(D{aTrial}.eyeXv.^2 + D{aTrial}.eyeYv.^2);
+            D{aTrial}.eyeXa = aiDiff(1/D{1}.sfr1,D{1}.win,D{aTrial}.eyeXv);%changed to control for vel w/o saccade
+            D{aTrial}.eyeYa = aiDiff(1/D{1}.sfr1,D{1}.win,D{aTrial}.eyeYv);
+            D{aTrial}.eyeVa = sqrt(D{aTrial}.eyeXa.^2 + D{aTrial}.eyeYa.^2);
+            [D{aTrial}.sacc, D{aTrial}.eyeXvws, D{aTrial}.eyeYvws, D{aTrial}.eyeVvws] = detectSaccades2(D,aTrial);
+        end
+        cd(savePath);
+        save([filename2(1:end-4) 'D.mat'],'D');
+        cd(origPath);
+    else
+        cd(origPath);
+    end
+catch
+    cd(origPath);
+    
+end
