@@ -8,7 +8,7 @@ savePath ='C:\Users\BlohmLab\Desktop\Sydney\Data';
 prompt = {'Tracker EDF file name:', 'Subject ID:', 'Session #', 'Block #', '# of trials'};
 dlgTitle = 'input';                              
 numLines = 1;                                     
-defaultAns = {'AC_SB','13','5','9','50'};
+defaultAns = {'AC_XX','#','#','#','#'}; %subject initials, subject ID#, session #, block #. trial #
 inputCluster = inputdlg(prompt, dlgTitle, numLines, defaultAns);
 edfFile = strcat(inputCluster{1}, inputCluster{3}, inputCluster{4});
 subjectID = str2num(inputCluster{2});
@@ -60,10 +60,10 @@ params = nan(5,numTrials);
 frame_infos = nan(7,numTrials);
 vels = cell(1,numTrials);
 for aTrial = 1:numTrials
-    %% put all this code in a seperate matlab function. 
+  
     
     [motion, param, frame_info, vel_values] = generate_trial(frameRate, ppcmx, dist2Screen);
-    %% before assigning to exp_array, check to see if the trial goes off screen, if it does, recall generate trial function. 
+    
     while isempty(exp_array{1,aTrial})
         if sum(xCenter + motion(3,:) > xPixels | xCenter + motion(3,:) < 0) == 0
             exp_array{1,aTrial} = motion(1,:); %motion matrix in degrees
