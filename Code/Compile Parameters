@@ -1,0 +1,213 @@
+
+clear
+origPath = '/Users/Sydney/Desktop/Saccade/Code';
+loadPath = '/Users/Sydney/Desktop/Saccade/Data/NewExtracted';
+master = '/Users/Sydney/Desktop/Saccade/Data/MasterParams2023';
+savePath = '/Users/Sydney/Desktop/Saccade/Data/MasterParams2023';
+cd(loadPath)
+files = dir;
+directoryNames = {files([files.isdir]).name};
+directoryNames = directoryNames(~ismember(directoryNames,{'.','..'}));
+params = [];
+masterParams = [];
+D =[];
+
+for i=1:length(directoryNames)
+     cd(directoryNames{i});
+     currentPath = pwd;
+     matList = what; matList = matList.mat;
+     for j = 1:length(matList)
+        filename = [string(matList(j))];
+        load(filename)
+         if exist('2022_MasterParams');% && exist('masterPE') && exist('masterRS')
+            masterParams = [masterParams;param]; % add all params together
+
+         else
+             masterParams = param;
+
+         end 
+            masterParams = param;
+ 
+     
+
+
+%This code checks for double saccades and flags them
+    dur = masterParams(:,14);
+    amp = abs(masterParams(:,16)-masterParams(:,15));
+    amp2 = masterParams(:,16)-masterParams(:,15);
+    muDur = mean(dur);
+    rngDur = range(dur);
+    sigDur = sqrt(var(dur));
+    masterParams(:, 33) = masterParams(:,15)> muDur + 2*sigDur;
+    [b,stats] = robustfit(amp,dur);
+    pred = b(1) + b(2) * dur;
+    res2 = pred-amp;
+    res = stats.resid;
+    mu2=mean(res2);
+    sig2 = sqrt(var(res2));
+    pd = fitdist(res,'normal');
+    mu = mean(pd);
+    sig = sqrt(var(pd));
+    ind = find(res>(mu+sig));
+    ind2=find(res2>(mu2+sig2));
+    masterParams(:,34) =0;
+    masterParams(ind2,34) = 1; %Double saccades
+    
+     index = size(masterParams,2); % adds new columns to the parameter matrix
+    for l = 1:length(D)
+        try
+            target_velocity =  1000*[diff(D{l}.target_x_interp)];           
+            target_velocity = [target_velocity, target_velocity(end)];
+            indSacc = D{l}.sacc(D{l}.sacc(:,1)>D{l}.tStep2 +100);
+            endSacc = D{l}.sacc(D{l}.sacc(:,2)>D{l}.tStep2 +100);
+            saccs = D{l}.sacc(D{l}.sacc(:,1)>D{l}.tVel & D{l}.sacc(:,1)<D{l}.tAcc_off, :);
+            totalnosacc = (D{l}.tAcc_off - D{l}.tVel) - sum(saccs(:,2) - saccs(:,1));
+            totalinsacc = sum(saccs(:,2) - saccs(:,1));
+            ratio = totalinsacc/totalnosacc;
+            normsacc = totalinsacc / (D{l}.tAcc_off - D{l}.tVel);
+            avamp = nanmean(D{l}.eyeX(saccs(:,2)) - D{l}.eyeX(saccs(:,1))); 
+            motion = (D{l}.t(D{l}.tAcc_off) - D{l}.t(D{l}.tVel))/1000;
+            saccsecond = length(saccs)/motion;
+            
+          
+            saccpos = D{l}.eyeX(saccs);
+           
+          
+            cummotion = sum((abs(D{l}.eyeXv(D{l}.tVel:D{l}.tAcc_off)))/1000); 
+         
+           
+            
+             cumsacc = sum(abs(saccpos(:,2) - saccpos(:,1)));
+             
+             poschange = cumsacc/cummotion;% ratio saccades / pure pursuit 
+             poschangev = cumsacc/cummotionv; %same but without saccades
+             
+             
+             stepsize = D{1}.params(5,l); %size of tstep 2
+       
+       
+  
+            
+         s = indSacc - 125;
+         e = indSacc - 75;
+         f = indSacc - 25;
+         g = indSacc + dur(l) + 25;
+         h = indSacc + dur(l) + 75;
+         s2 = indSacc - 200;
+         e2 = indSacc;
+         s3 = endSacc;
+         e3 = endSacc + 200;
+
+   
+         tvel2 = (nanmean(target_velocity(s:e)));
+         tvel = (nanmean(D{l}.target_v_interp(s-D{l}.tVel:e-D{l}.tVel)));
+         velrobust = robustfit(D{l}.t(s:e),(D{l}.eyeX(s:e)));
+         velrob = velrobust(2)*1000;
+         eyeXvRange =  (nanmean(D{l}.eyeXvws(s:e)));
+
+         pursuitvel = ((nanmean(D{l}.eyeXvws(e:f))+nanmean(D{l}.eyeXvws(g:h)))/2)*(dur(l)/1000);
+         pursuitv = ((nanmean(D{l}.eyeXvws(e:f))+nanmean(D{l}.eyeXvws(g:h)))/2);
+       
+         Arobust200 = robustfit(D{l}.t(s2:e2),(D{l}.eyeXvws(s2:e2))); 
+         Arob200 = Arobust200(2)*1000; %Used to compute retinal acceleration used in analysis
+
+         Arobust200b = robustfit(D{l}.t(s3:e3),(D{l}.eyeXvws(s3:e3)));
+         Arob200b = Arobust200b(2)*1000;
+         oldRS = nanmean(D{l}.target_v_interp(s-D{l}.tVel:e-D{l}.tVel)) - nanmean(D{l}.eyeXvws(s:e));
+         newRS = tvel - velrob;
+         m= D{l}.tStep2 - 25;
+         o= D{l}.tStep2 + 25;
+         tvelstep = nanmean(D{l}.target_v_interp(m-D{l}.tVel:o-D{l}.tVel));
+         eyevstep = nanmean(D{l}.eyeXvws(m:o));
+         RSstep = tvelstep - eyevstep;
+         PEstep = D{l}.target_x_interp(D{l}.tStep2) -nanmean(D{l}.eyeX(m:o));
+         eyeastep = robustfit(D{l}.t(m:o),(D{l}.eyeXvws(m:o)));
+         eyeAstep = eyeastep(2)*1000;
+         RAstep = D{l}.a - eyeAstep;
+         
+             
+        %target vel at t step
+        empty = zeros(1,length(D{l}.tFixation:D{l}.tVel));
+        empty2 = zeros(1,length(D{l}.tAcc_off:D{l}.tTrialEnd));
+        
+        vrange = cat(2,empty,D{l}.target_v_interp, empty2);
+        
+        tstepv = vrange(D{l}.tStep2);
+        tstepv2 = vrange(nanmean(D{l}.tStep2 - 25:D{l}.tStep2 +25));
+        
+     
+         totalsacc = length(saccs);
+         saccdur = saccs(1,2) -  saccs(1,1);
+         D{l}.eyeXa = aiDiff(1/D{1}.sfr1,D{1}.win,D{l}.eyeXvws);
+         SaccEyeA = D{l}.eyeXa(indSacc(1));
+    
+     
+       
+         
+     
+         
+             masterParams(l,index+1) = D{l}.a - Arob200;%35 "RA200": Retinal acceleration error over 200ms range 
+             masterParams(l,index+2) = newRS; %36 "Rsrob": Retinal slip centred 100ms before, robust regression          
+             masterParams(l,index+3) = tvel - eyeXvRange;%37 "RS100": Retinal slip centred 100ms before
+             masterParams(l,index+4) = amp(l)- pursuitvel;%38 "camp": corrected saccade amplitude using absolute value
+             masterParams(l,index+5) = pursuitv;%39 "PursuitVel": mean pursuit velocity before and after saccade
+             masterParams(l,index+6) = amp2(l)- pursuitvel;%40 "camp2" corrected saccade amplitude, not absolute value
+             masterParams(l,index+7) = RSstep;%41 retinal slip at target step
+             masterParams(l,index+8) = PEstep;%42 position error at target step
+             masterParams(l,index+9) = RAstep;%43 retinal acceleration at target step 
+             masterParams(l,index+10) = tvelstep;%44 target velocity at step
+             masterParams(l,index+11) = eyevstep;%45 eye velocity at step 
+             masterParams(l,index+12) = normsacc; %46 proportion of time spent in saccades during motion
+             masterParams(l,index+13) = avamp; %47 avg saccade amplitude
+             masterParams(l,index+14) = saccsecond;%48 saccades per second
+             masterParams(l,index+15) = cumsacc;%49 total saccadic displacement
+             masterParams(l,index+16) = cummotion;%50 total eye displacements
+             masterParams(l,index+17) = poschange;%51 ratio of saccades / pure pursuit
+             masterParams(l,index+18) = poschangev;%52 "poschangevws" ratio of saccades / pure pursuit computed with eye vel with saccade removed
+             masterParams(l,index+19) = stepsize;%53 target step size
+             masterParams(l,index+20) = tstepv;%54 target velocity at step 
+             masterParams(l,index+21) = Arob200;%55 eye acceleration over 200 ms range before saccade
+             masterParams(l,index+22) = SaccEyeA;%56 eye acceleration at saccade
+             masterParams(l,index+23) = Arob200b;%57 eye acceleration over 200ms range after saccade
+%         
+              catch
+             masterParams(l,index+1) = nan;
+             masterParams(l,index+2) = nan;
+             masterParams(l,index+3) = nan;
+             masterParams(l,index+4) = nan;
+             masterParams(l,index+5) = nan;
+             masterParams(l,index+6) = nan;
+             masterParams(l,index+7) = nan;
+             masterParams(l,index+7) = nan;
+             masterParams(l,index+9) = nan;
+             masterParams(l,index+10) = nan;
+             masterParams(l,index+11) = nan;
+             masterParams(l,index+12) = nan;
+             masterParams(l,index+13) = nan;
+             masterParams(l,index+14) = nan;
+             masterParams(l,index+15) = nan;
+             masterParams(l,index+16) = nan;
+             masterParams(l,index+17) = nan;
+             masterParams(l,index+18) = nan;
+             masterParams(l,index+19) = nan;
+             masterParams(l,index+20) = nan;
+             masterParams(l,index+21) = nan;
+             masterParams(l,index+22) = nan;
+             masterParams(l,index+23) = nan;
+        end   
+       
+        
+
+    end
+    params = [params;masterParams];
+    masterParams = [masterParams];
+     end
+%% Clean and save     
+cd(master)
+save([D{1}.dFilename(1:end-7) 'MasterData.mat'],'params')%,'masterPE','masterRS')
+clear masterParams
+   
+cd(loadPath)
+
+
+end
