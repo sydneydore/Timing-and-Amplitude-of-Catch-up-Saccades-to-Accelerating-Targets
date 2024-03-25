@@ -1,0 +1,143 @@
+function param =  NewExtract(D,savePath)
+    origPath = '/Users/sydneydore/Desktop/Masters Thesis/Data_new';
+    savePath = '/Users/sydneydore/Desktop/Masters Thesis/NewExtracted';
+    savePath= savePath;
+for aTrial = 1: D{1}.numTrials 
+    varName = sprintf('D{%i}',aTrial);
+    if ~isfield(eval(varName),'sacc')
+        fprintf('Saccade is not completely detected. Please go to trial %i first\n',aTrial);
+        save([D{1}.dFilename],'D')
+        fprintf('Only D Matrix is saved\n');
+        param = [];
+       
+        return
+    end
+end
+
+param = zeros(D{1}.numTrials, 33);
+indDot = strfind(D{1}.edfFilename,'.'); 
+indBar = strfind(D{1}.edfFilename,'_');
+
+blockID = str2double(D{1}.edfFilename(regexp(D{1}.edfFilename,'\d'))); %returns session+block number 
+
+for aTrial = 1:D{1}.numTrials
+
+   
+%% Subject & trial information
+    param(aTrial,1) =  D{1}.subjectID;                                      %1,subject ID
+    param(aTrial,2) =  blockID;                     %2,block ID   
+    param(aTrial,3) = D{aTrial}.trial_type; %Type of acceleration trial (1= no step 0vel, 2= step, 40deg/s vel)
+    param(aTrial,4) = aTrial;
+    if aTrial <=9
+        param(aTrial,5) = str2num(strcat(num2str(D{1}.subjectID), num2str(blockID),'.', '0', num2str(aTrial))); %unique trial ID number
+    else
+        param(aTrial,5) = str2num(strcat(num2str(D{1}.subjectID), num2str(blockID),'.', num2str(aTrial)));
+    end
+ 
+    param(aTrial,5) = D{aTrial}.initial_condition;                                      %5, trial type
+    param(aTrial,6) = D{aTrial}.tVel;                                 %6, first ramp velocity
+    param(aTrial,7) = D{aTrial}.tStep2;                                 %7, second target step (PS)
+    param(aTrial,8) = D{aTrial}.tAcc_off;                                 %8, second velocity ramp
+    param(aTrial,9) = D{aTrial}.tFixation2;          %9 velocity step (VS)
+
+%% Saccade information
+
+    if isempty(D{aTrial}.sacc) == 0 param(aTrial,10) = size(D{aTrial}.sacc,1); else param(aTrial,10) = 0; end %10, number of total saccades
+ 
+    
+    % find saccade right after the second step
+    indSacc = find(D{aTrial}.t(D{aTrial}.sacc(:,1))>D{aTrial}.tStep2 +100 & D{aTrial}.t(D{aTrial}.sacc(:,1))<D{aTrial}.tAcc_off);%
+    otherSacc = find(D{aTrial}.t(D{aTrial}.sacc(:,1))<D{aTrial}.tStep2);
+    if isempty(indSacc) == 1  %|| find(D{aTrial}.t(D{aTrial}.sacc(:,1))>D{aTrial}.tStep2);
+        D{aTrial}.type = 0; %  its a smooth trial
+        param(aTrial,11) = 0; %11, number of saccades on second ramp 
+    elseif isempty(indSacc) == 0
+        D{aTrial}.type = 1; %type = 1 saccade trial
+        param(aTrial,11) = size(indSacc,2); %11, number of saccades on second ramp
+        ind = indSacc(1);
+    end
+    if isempty(otherSacc) == 0 param(aTrial,12) = size(otherSacc,2); else, param(aTrial,12)= 0; end % number of saccades before target step 2
+
+%% Saccade of interest parameters
+    if D{aTrial}.type == 1
+        param(aTrial,13) = D{aTrial}.t(D{aTrial}.sacc(ind,1))- (D{aTrial}.tStep2); %13,  saccade reaction time with respect to the second target step
+        param(aTrial,14) =  D{aTrial}.sacc(ind,2) -  D{aTrial}.sacc(ind,1);%14, Duration of saccade to second target step, ms
+        param(aTrial,15) = D{aTrial}.eyeX(D{aTrial}.sacc(ind,1)); %15,1st saccade initial x position(degree, center is 0 degree);
+        param(aTrial,16) = D{aTrial}.eyeX(D{aTrial}.sacc(ind,2)); %16,1st saccade end x position(degree, center is 0 degree);
+        param(aTrial,17) = nanmax(abs(D{aTrial}.eyeXv(D{aTrial}.sacc(ind,1):D{aTrial}.sacc(ind,2))));%17, maximum eye X velocity of 1st saccade(degree, center is 0 degree);
+        param(aTrial,18) = D{aTrial}.eyeX(D{aTrial}.sacc(ind,1)-100); %18, fixation 100ms before 1st saccade(degree, center is 0 degree);
+        param(aTrial,19) =  D{aTrial}.target_x_interp(D{aTrial}.sacc(ind,1)-100)-param(aTrial,18); %19 Position error 100ms before sacc onset %target-eye
+        s = D{aTrial}.sacc(ind,1) - 125;
+        e = D{aTrial}.sacc(ind,1) - 75;
+        sacc_ind = D{aTrial}.sacc(ind,1);
+        param(aTrial,20) = nanmean(D{aTrial}.target_v_interp(s-D{aTrial}.tVel:e-D{aTrial}.tVel)) - nanmean(D{aTrial}.eyeXvws(s:e));  %20, Retinal slip over 50ms interval centered 100ms before sacc onset
+        param(aTrial,21) = D{aTrial}.target_x_interp(D{aTrial}.sacc(ind,1)) - param(aTrial,15); %21,Position error at beginning of saccade
+        param(aTrial,22) = D{aTrial}.target_x_interp(D{aTrial}.sacc(ind,2)) - param(aTrial,16);%22, Position error at end of saccade (accuracy)
+        param(aTrial,23) = D{aTrial}.target_x_interp(D{aTrial}.tStep2+5) - D{aTrial}.eyeX(D{aTrial}.tStep2);%23, position error at targt step. %Adding +5 to index since interpolation adds values in between sampling difference. 
+        param(aTrial,24)= D{aTrial}.a;
+  
+       
+        
+       
+    elseif D{aTrial}.type ==0
+        param(aTrial,13:25) = 0; %smooth trials
+    end
+    
+    param(aTrial,26) = D{aTrial}.good;                                      %26,good(0) or bad(1)
+    
+    %Is there a saccade before the second target step that ends within 200ms of
+    %the step
+    if isempty(otherSacc) == 1 param(aTrial,27) = 0; param(aTrial,28) = 0; param(aTrial,29) = 0; %27,is saccade between 200-100ms before the step
+                                                                           %28, is saccade within 100ms of step
+                                                                           %29, is saccade during the step
+    else
+        timestamp = (D{aTrial}.tStep2 - D{aTrial}.t(D{aTrial}.sacc(otherSacc(end),2)));
+        if timestamp > 200 param(aTrial,25)= 0; param(aTrial,26)=0; 
+        elseif timestamp < 100 && timestamp > 0 param(aTrial,27) = 0; param(aTrial,28)=1; 
+        else param(aTrial, 29) = 1; param(aTrial,30) = 0; end 
+        if (D{aTrial}.t(D{aTrial}.sacc(otherSacc(end),1))< D{aTrial}.tStep2 && D{aTrial}.tStep2 < D{aTrial}.t(D{aTrial}.sacc(otherSacc(end),2)))==1 param(aTrial,29) = 1;    
+        else param(aTrial,29)=0; end
+    end  
+    if param(aTrial, 13) < 80 && D{aTrial}.type == 1 param(aTrial,30) = 1; else param(aTrial,30) = 0; end %30, is reaction time faster than 50ms
+
+% Is the saccade made to the first ramp trajectory or the second ramp
+% trajectory. I check this by seeing if the distance to the target
+% increases or decreases after saccade
+
+%%Extrapolated to saccade end && First and Second ramp position of saccade
+%%end > 5deg
+    if D{aTrial}.type==1
+    y = [D{aTrial}.target_x_interp(D{aTrial}.tVel), D{aTrial}.target_x_interp(D{aTrial}.tStep2-20)];
+    x = [D{aTrial}.tVel, D{aTrial}.tStep2-20];
+    xq = D{aTrial}.sacc(ind,2);
+    pred = interp1(x,y,xq,'linear','extrap'); %Extrapolated target ramp 1 target position up to the end of saccade of interest
+    extr_PE = pred - D{aTrial}.eyeX(xq); %Saccade position error to extrpolated position
+    if (abs(param(aTrial,22)) - abs(extr_PE))>1 && param(aTrial,13)<200 %if the diff between above error and actual sacc error greater than one && if RT less than 200 move on to next step
+        if abs(pred-D{aTrial}.target_x_interp(D{aTrial}.sacc(ind,2)))>5, param(aTrial,31) = 1; %if the diff between extrapolated target pos and actual target pos greater than 5
+        elseif (abs(param(aTrial,22)) - abs(param(aTrial,23)) > 0) == 1 param(aTrial,31) = 0; %if position error at end of sacc is smaller than beginning of saccade (check direction)
+        elseif (abs(param(aTrial,22)) - abs(param(aTrial,23)) < 0) == 1 param(aTrial,31) = 1; %if opposite direction i.e. position error increasing
+        else param(aTrial,31)=0;
+        end
+    else param(aTrial,31)=0;
+    end
+    if param(aTrial,31) == 1
+        if size(D{aTrial}.sacc,1) >= ind+1
+        RT = D{aTrial}.t(D{aTrial}.sacc(ind+1,1)) - D{aTrial}.t(D{aTrial}.sacc(ind,2));
+        if RT<50
+            param(aTrial,34)=1;
+        else param(aTrial,34)=0; %skips from 30 - 33 (mine is 29 - 32) is this cause of ind+1? 
+        end
+        end
+    else
+        param(aTrial,34) =0;
+    end
+    end
+end
+
+
+
+discarded = length(find(param(:,25)==1));
+cd(savePath);
+save([D{1}.dFilename],'D','param');
+fprintf('D Matrix and Extracted Data is saved\n');
+cd(origPath)
