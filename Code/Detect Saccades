@@ -1,0 +1,33 @@
+% detectSaccades2.m detects saccade use acceleration threhold, for the pursuit this is the only method to be used.
+function [sacc eyeXvws eyeYvws eyeVvws] = detectSaccades2(D, trn)
+%% detect saccades (acceleration threshold: 750deg/s2)
+ens = find(D{trn}.eyeVa >= 750); % degree > 750
+[pos,n] = group(ens,round(0.030*D{1}.sfr1),round(0.030*D{1}.sfr1));
+temp = ens(pos);
+
+sacc = zeros(round(length(temp)/2),2);
+for i = 1:round(length(temp)/2)
+
+  sacc(i,1) =  temp(2*i-1); %saccade onset
+  sacc(i,2) =  temp(2*i);  %saccade offset
+
+
+end
+
+%% remove saccades from velocity trace
+lg = length(D{trn}.eyeXv);            %lg=nbre de mesures
+eyeXvws = D{trn}.eyeXv;%Xvws = X-direction Velocity Without Saccades
+eyeYvws = D{trn}.eyeYv;
+for i=1:round(length(temp)/2),
+    begi = round(max(temp(i*2-1)-round(0.025*D{1}.sfr1),1));% index of saccade onset
+    endi = round(min(temp(i*2)+round(0.025*D{1}.sfr1),lg));% index of saccade end
+    d = endi-begi;											 %duration of saccade
+    yaX = D{trn}.eyeXv(begi);                                %velocity 24 ms before
+    ybX = D{trn}.eyeXv(endi);                                %velocity 24 ms after
+    yaY = D{trn}.eyeYv(begi);                                %velocity 24 ms before
+    ybY = D{trn}.eyeYv(endi);                                %velocity 24 ms after
+    eyeXvws(begi:endi)=(yaX+(0:d)*(ybX-yaX)/d)';          %=> linear interpolation 
+    eyeYvws(begi:endi)=(yaY+(0:d)*(ybY-yaY)/d)';          %=> linear interpolation 
+end
+eyeVvws = sqrt(eyeXvws.^2 + eyeYvws.^2);
+
